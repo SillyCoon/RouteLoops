@@ -4,20 +4,16 @@ import 'https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-ma
 //Also, adjust the callback
 //Adjust all DoNotPush
 
-var map, RoutingControl;
-var rlPath, rawPath, guidepointPath;
-var allPoints;
-var currentWaypoints = [];
-var doRemoval = false;
-var doAdd = false;
-var directionMarkers = [];
-var homeMarker;
+let map, RoutingControl;
+let rlPath, rawPath, guidepointPath;
+let allPoints;
+let currentWaypoints = [];
+let directionMarkers = [];
+let homeMarker;
 const { protocol, hostname, port } = window.location;
 const urlParams = new URLSearchParams(window.location.search);
-var accessToken = null;
-var oauthToken = null;
-var hasRouteLink = false;
-var theConfiguration = {};
+let hasRouteLink = false;
+let theConfiguration = {};
 let lastCounts = { cleaned: -1, total: -1 };
 let newWaypoints = [];
 
