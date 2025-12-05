@@ -153,8 +153,12 @@ async function directions(req, res, next) {
 			var data = { coordinates: coordinates, options: options };
 
 			var url = api_root;
-			var response = await fetch(url, { method: 'POST', body: JSON.stringify(data), headers: ApiHeaders });
-			var theJson = await response.json();
+			try {
+				var response = await fetch(url, { method: 'POST', body: JSON.stringify(data), headers: ApiHeaders });
+				var theJson = await response.json();
+			} catch (error) {
+				console.log("Error fetching directions from OpenRouteService:", error);
+			}
 
 			console.log(api_root);
 			console.log(JSON.stringify(data));
@@ -270,7 +274,7 @@ async function geocode(req, res, next) {
 		var api_root = "https://api.openrouteservice.org/geocode/search?";
 		var theLocation = result.location;
 		var key = process.env.OSM_API_KEY;
-		var url = api_root + `text=${theLocation}&api_key=${key}`;
+		var url = api_root + `text = ${theLocation}& api_key=${key} `;
 		console.log(url);
 
 		const response = await fetch(url);
@@ -333,7 +337,7 @@ async function getRLpoints(req, res, next) {
 			pickMethod = methods[Math.floor(Math.random() * methods.length)];
 		}
 
-		console.log(`picMethod of ${pickMethod} in direction ${direction}`);
+		console.log(`picMethod of ${pickMethod} in direction ${direction} `);
 		var rlPoints = [];
 		if (pickMethod == "circular") rlPoints = circleRoute(LatLng, targetLengthInMeters, direction, rotation);
 		if (pickMethod == "rectangular") rlPoints = rectangleRoute(LatLng, targetLengthInMeters, direction, rotation);
@@ -756,7 +760,7 @@ function showDirections(req, res, next) {
 	
 		if(error!=""){
 				status = "NG";
-				theHTML = `<h1>Problem getting a route when trying to generate directions.</h1>`;
+				theHTML = `< h1 > Problem getting a route when trying to generate directions.</h1 > `;
 		}
 		*/
 
@@ -772,7 +776,7 @@ function showDirections(req, res, next) {
 		var theHTML = "";
 		if (allPoints.length <= 0) {
 			status = "NG";
-			theHTML = `<h1>No points brought in for directions display.</h1>`;
+			theHTML = `< h1 > No points brought in for directions display.</h1 > `;
 		}
 		else {
 			var currentTime = new Date();
@@ -789,34 +793,37 @@ function showDirections(req, res, next) {
 			theHTML += "<html><head><title>" + name + "</title>";
 			theHTML += "</head><body>";
 
-			theHTML += `<style>`;
-			theHTML += `table, th, td {`;
-			theHTML += `  border: 1px solid black;`;
-			theHTML += `  border-collapse: collapse;`;
-			theHTML += `}`;
-			theHTML += `tr:nth-child(even) {`;
-			theHTML += `  background-color: rgba(150, 212, 212, 0.4);`;
-			theHTML += `}`;
-			theHTML += `th:nth-child(even),td:nth-child(even) {`;
-			theHTML += `  background-color: rgba(150, 212, 212, 0.4);`;
-			theHTML += `}`;
-			theHTML += `</style>`;
+			theHTML += `< style > `;
+			theHTML += `table, th, td {
+						`;
+			theHTML += `  border: 1px solid black; `;
+			theHTML += `  border - collapse: collapse; `;
+			theHTML += `} `;
+			theHTML += `tr: nth - child(even) {
+						`;
+			theHTML += `  background - color: rgba(150, 212, 212, 0.4); `;
+			theHTML += `} `;
+			theHTML += `th: nth - child(even), td: nth - child(even) {
+						`;
+			theHTML += `  background - color: rgba(150, 212, 212, 0.4); `;
+			theHTML += `} `;
+			theHTML += `</style > `;
 
 			var totalDistanceKm = allPoints[allPoints.length - 1].cumulativeDistanceKm;
 			var totalDistance = showDist(totalDistanceKm, units);
 			var duration = totalDistance / speed;
-			theHTML += `${totalDistance.toFixed(1)} ${displayUnits} &nbsp;&nbsp; about &nbsp;&nbsp; ${convertHoursToHMS(duration)} at ${speed} ${displayUnits}/hour.</br>`;
+			theHTML += `${totalDistance.toFixed(1)} ${displayUnits} & nbsp;& nbsp; about & nbsp;& nbsp; ${convertHoursToHMS(duration)} at ${speed} ${displayUnits} /hour.</br > `;
 			theHTML += "<table>";
 			theHTML += "<tr>";
-			theHTML += `<th></th> <th>Instruction</th> <th>${displayUnits} to next</th><th>${displayUnits} total</th>`;
+			theHTML += `< th ></th > <th>Instruction</th> <th>${displayUnits} to next</th><th>${displayUnits} total</th>`;
 			theHTML += "</tr>";
 			var theIndex = 0;
 			for (var i = 0; i < allPoints.length; i++) {
 				if (!allPoints[i].hasOwnProperty("instructions")) continue;
 				theIndex += 1;
 				theHTML += "<tr>";
-				theHTML += `<td>${theIndex}.</td> <td>${allPoints[i].instructions}</td> <td>${showDist(allPoints[i].distanceToNextKm, units).toFixed(1)}</td>`;
-				theHTML += `<td>${showDist(allPoints[i].distanceToNextKm + allPoints[i].cumulativeDistanceKm, units).toFixed(1)}</td>`;
+				theHTML += `< td > ${theIndex}.</td > <td>${allPoints[i].instructions}</td> <td>${showDist(allPoints[i].distanceToNextKm, units).toFixed(1)}</td>`;
+				theHTML += `< td > ${showDist(allPoints[i].distanceToNextKm + allPoints[i].cumulativeDistanceKm, units).toFixed(1)}</td > `;
 				theHTML += "</tr>";
 			}
 			theHTML += "</table>";
@@ -1129,7 +1136,7 @@ function convertHoursToHMS(hours) {
 	const mins = Math.floor(remainingSeconds / 60);
 	const secs = remainingSeconds % 60;
 
-	return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+	return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} `;
 }
 //...............................................................
 function hours(secs) {
