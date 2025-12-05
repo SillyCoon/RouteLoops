@@ -21,6 +21,10 @@ var theConfiguration = {};
 let lastCounts = {cleaned:-1,total:-1};
 let newWaypoints = [];
 
+const avoidFerries = "yes";
+const method = "random"
+const direction = "0"
+
 window.onload = () => { 
 	initMap()
 
@@ -265,10 +269,10 @@ async function doRL(waypointsIn)
 	var theDistance = document.getElementById("inputDist").value;
 	var theUnits    = document.getElementById("inputUnits").value;
 	var theRotation  = document.getElementById("inputRotation").value;
-	var theDirection= document.getElementById("inputDirection").value;    
+	var theDirection= direction;    
 	var url = `${protocol}//${hostname}:${port}/getRLpoints?lat=${theLatLng.lat}&lng=${theLatLng.lng}`;
 	url += `&dist=${theDistance}&units=${theUnits}&rotation=${theRotation}&direction=${theDirection}`;
-	var theMethod= document.getElementById("method").value;    
+	var theMethod= method;    
 	url += `&method=${theMethod}`;
 	var theResp = await fetch(url);
 	var theJson = await theResp.json();
@@ -296,7 +300,7 @@ async function doRL(waypointsIn)
     //Call the directions service using the guide point as waypoints.
     var theMode       = document.getElementById("inputMode").value;
     var inputHighways = document.getElementById("inputHighways").value;    
-    var inputFerries  = document.getElementById("inputFerries").value;    
+    var inputFerries  = avoidFerries;    
     var fitnessLevel  = document.getElementById("fitnessLevel").value;    
     var greenFactor   = document.getElementById("greenFactor").value;    
     var quietFactor   = document.getElementById("quietFactor").value;    
@@ -613,10 +617,10 @@ function saveConfiguration(){
     theConfiguration.greenFactor = document.getElementById("greenFactor").value;
     theConfiguration.quietFactor = document.getElementById("quietFactor").value;
     theConfiguration.inputRotation = document.getElementById("inputRotation").value;
-    theConfiguration.inputDirection = document.getElementById("inputDirection").value;
-    theConfiguration.method = document.getElementById("method").value;
+    theConfiguration.inputDirection = direction;
+    theConfiguration.method = method;
     theConfiguration.inputHighways = document.getElementById("inputHighways").value;
-    theConfiguration.inputFerries = document.getElementById("inputFerries").value;
+    theConfiguration.inputFerries = avoidFerries;
     theConfiguration.currentWaypoints = currentWaypoints;
 
     var theLink = "";
@@ -663,10 +667,7 @@ function useRouteLink(){
     if (urlParams.has("greenFactor"))  document.getElementById("greenFactor").value = urlParams.get("greenFactor");
     if (urlParams.has("quietFactor"))  document.getElementById("quietFactor").value = urlParams.get("quietFactor");
     if (urlParams.has("inputRotation")) document.getElementById("inputRotation").value = urlParams.get("inputRotation");
-    if (urlParams.has("inputDirection")) document.getElementById("inputDirection").value = urlParams.get("inputDirection");
-    if (urlParams.has("method"))       document.getElementById("method").value = urlParams.get("method");
     if (urlParams.has("inputHighways")) document.getElementById("inputHighways").value = urlParams.get("inputHighways");
-    if (urlParams.has("inputFerries"))  document.getElementById("inputFerries").value = urlParams.get("inputFerries");
     var waypoints = [];
     var pts = [];
     if (urlParams.has("waypoints")){
