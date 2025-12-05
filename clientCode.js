@@ -174,7 +174,7 @@ async function setAsHome(location) {
 
 	//Center the map on this location.
 	if (typeof waypointsIn == "undefined")
-		map.setView(new L.LatLng(location.lat, location.lng), 18);
+		map.setView(new L.LatLng(location.lat, location.lng));
 
 	//Put a house marker at the start/end point.
 	const homeIcon = L.icon({
