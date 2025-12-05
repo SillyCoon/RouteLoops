@@ -25,7 +25,9 @@ const avoidFerries = "yes";
 const method = "random"
 const direction = "0"
 
-window.onload = () => {
+let homeLocation = null
+
+window.onload = async () => {
 	initMap()
 
 	document.querySelector('#route-loop').addEventListener('click', () => {
@@ -34,16 +36,16 @@ window.onload = () => {
 }
 
 
+
+
 async function initMap() {
 	if (urlParams.has("routeLink")) hasRouteLink = true;
 
 	map = L.map('map').setView([42.3, -71.3], 8);
 
 	map.on('click', function (event) {
-		var lat = event.latlng.lat;
-		var lng = event.latlng.lng;
-		if (doRemoval) doRemoveWaypoint(lat, lng);
-		if (doAdd) doAddWaypoint(lat, lng);
+		setAsHome(event.latlng);
+		homeLocation = event.latlng;
 	});
 
 	const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -183,49 +185,25 @@ function showDirectionMarkers() {
 }
 
 //.........................................
-async function setAsHome() {
+async function setAsHome(location) {
 	try { homeMarker.remove(); } catch (err) { }
-
-	//Find the starting point of the RouteLoop
-	var theLocation = document.getElementById("inputLocation").value;
-	var areCoords = false;
-	try {
-		var items = theLocation.split(",");
-		if (items[0].toLowerCase().indexOf("s") >= 0) items[0] = ("-" + items[0]).replaceAll(" ", "");
-		if (items[1].toLowerCase().indexOf("w") >= 0) items[1] = ("-" + items[1]).replaceAll(" ", "");
-		var lat = parseFloat(items[0]);
-		var lng = parseFloat(items[1]);
-		if (items.length == 2 && !isNaN(items[0]) && !isNaN(items[1])) areCoords = true
-		var theLatLng = { lat: lat, lng: lng };
-	}
-	catch (err) { }
-
-	if (!areCoords) {
-		var encoded = encodeURI(theLocation);
-
-		//Geocode this starting location in to a Lat/Lng pair.
-		var url = `${protocol}//${hostname}:${port}/geocode?location=${encoded}`;
-		var theResp = await fetch(url);
-		var theJson = await theResp.json();
-		var theLatLng = { lat: theJson.features[0].geometry.coordinates[1], lng: theJson.features[0].geometry.coordinates[0] };
-	}
 
 	//Center the map on this location.
 	if (typeof waypointsIn == "undefined")
-		map.setView(new L.LatLng(theLatLng.lat, theLatLng.lng), 18);
+		map.setView(new L.LatLng(location.lat, location.lng), 18);
 
 	//Put a house marker at the start/end point.
-	var homeIcon = L.icon({
+	const homeIcon = L.icon({
 		iconUrl: './images/Home.png'
 	});
 
-	homeMarker = L.marker([theLatLng.lat, theLatLng.lng], { icon: homeIcon, draggable: true, title: theLocation }).addTo(map);
-	homeMarker.on("dragend", function (e) {
-		var position = homeMarker.getLatLng();
-		document.getElementById("inputLocation").value = `${position.lat},${position.lng}`;
+	homeMarker = L.marker([location.lat, location.lng], { icon: homeIcon, draggable: true, title: 'Home' }).addTo(map);
+	homeMarker.on("dragend", function () {
+		const position = homeMarker.getLatLng();
 		map.setView(position, 18);
 	});
-	return { theLocation, theLatLng };
+	homeLocation = location;
+	return { location };
 }
 //........................................................................................
 async function doRL(waypointsIn) {
@@ -236,7 +214,7 @@ async function doRL(waypointsIn) {
 	try { map.removeLayer(guidepointPath); } catch (err) { }
 	try { homeMarker.remove(); } catch (err) { }
 
-	var { theLocation, theLatLng } = await setAsHome();
+
 	/*
 	//Find the starting point of the RouteLoop
 	var theLocation = document.getElementById("inputLocation").value;
@@ -246,18 +224,18 @@ async function doRL(waypointsIn) {
 	var url = `${protocol}//${hostname}:${port}/geocode?location=${encoded}`;
 	var theResp = await fetch(url);
 	var theJson = await theResp.json();    
-	var theLatLng = {lat:theJson.features[0].geometry.coordinates[1],lng:theJson.features[0].geometry.coordinates[0]};
+	var homeLocation = {lat:theJson.features[0].geometry.coordinates[1],lng:theJson.features[0].geometry.coordinates[0]};
 
 	//Center the map on this location.
 	if (typeof waypointsIn == "undefined")
-map.setView(new L.LatLng(theLatLng.lat,theLatLng.lng),18);
+map.setView(new L.LatLng(homeLocation.lat,homeLocation.lng),18);
 
 	//Put a house marker at the start/end point.
 	var homeIcon = L.icon({
 iconUrl: './images/Home.png'	
 });
 
-	homeMarker = L.marker([theLatLng.lat, theLatLng.lng], {icon: homeIcon,draggable:true,title:theLocation}).addTo(map);    
+	homeMarker = L.marker([homeLocation.lat, homeLocation.lng], {icon: homeIcon,draggable:true,title:theLocation}).addTo(map);    
 	*/
 
 	var initialWaypoints = [];
@@ -267,7 +245,7 @@ iconUrl: './images/Home.png'
 		var theUnits = document.getElementById("inputUnits").value;
 		var theRotation = document.getElementById("inputRotation").value;
 		var theDirection = direction;
-		var url = `${protocol}//${hostname}:${port}/getRLpoints?lat=${theLatLng.lat}&lng=${theLatLng.lng}`;
+		var url = `${protocol}//${hostname}:${port}/getRLpoints?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
 		url += `&dist=${theDistance}&units=${theUnits}&rotation=${theRotation}&direction=${theDirection}`;
 		var theMethod = method;
 		url += `&method=${theMethod}`;
@@ -280,9 +258,9 @@ iconUrl: './images/Home.png'
 	}
 	//Add the starting location as both the first, and the last, guide point.
 	var guidePoints = [];
-	guidePoints.push(new L.LatLng(theLatLng.lat, theLatLng.lng));
+	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
 	for (const waypoint of initialWaypoints) guidePoints.push(new L.LatLng(waypoint.lat, waypoint.lng));
-	guidePoints.push(new L.LatLng(theLatLng.lat, theLatLng.lng));
+	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
 
 	//Draw these guide points on the map.
 
@@ -301,7 +279,7 @@ iconUrl: './images/Home.png'
 	var fitnessLevel = document.getElementById("fitnessLevel").value;
 	var greenFactor = document.getElementById("greenFactor").value;
 	var quietFactor = document.getElementById("quietFactor").value;
-	var url = `${protocol}//${hostname}:${port}/directions?lat=${theLatLng.lat}&lng=${theLatLng.lng}`;
+	var url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
 	url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
 	url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
 	var waypointText = "";
@@ -371,7 +349,7 @@ iconUrl: './images/Home.png'
 				for (const waypoint of newWaypoints) waypoints.push(waypoint);
 
 				//Generate a new path based on this new set of waypoints.
-				var url = `${protocol}//${hostname}:${port}/directions?lat=${theLatLng.lat}&lng=${theLatLng.lng}`;
+				var url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
 				url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
 				url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
 				var waypointText = "";
@@ -422,9 +400,9 @@ iconUrl: './images/Home.png'
 
 		//This is a special section for OSM, to enable draggable routes.
 		var wpts = [];
-		wpts.push(new L.LatLng(theLatLng.lat, theLatLng.lng))
+		wpts.push(new L.LatLng(homeLocation.lat, homeLocation.lng))
 		for (const waypoint of waypoints) wpts.push(new L.LatLng(waypoint.lat, waypoint.lng))
-		wpts.push(new L.LatLng(theLatLng.lat, theLatLng.lng))
+		wpts.push(new L.LatLng(homeLocation.lat, homeLocation.lng))
 		RoutingControl.setWaypoints(wpts);
 
 		return;
@@ -569,43 +547,11 @@ async function generateOutput() {
 	return;
 }
 
-//................................................................
-async function doRemoveWaypoint(lat, lng) {
-
-	var ApiHeaders = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
-	var data = { lat: lat, lng: lng, waypoints: currentWaypoints };
-	var url = `${protocol}//${hostname}:${port}/removeWaypoint`;
-	var theResp = await fetch(url, { method: 'POST', body: JSON.stringify(data), headers: ApiHeaders });
-	var theJson = await theResp.json();
-	doRemoval = false;
-
-	currentWaypoints = JSON.parse(JSON.stringify(theJson.modifiedWaypoints));
-	doRL(currentWaypoints);
-
-	return;
-}
-
-//................................................................
-async function doAddWaypoint(lat, lng) {
-
-	var ApiHeaders = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
-	var data = { lat: lat, lng: lng, waypoints: currentWaypoints, allPoints: allPoints };
-	var url = `${protocol}//${hostname}:${port}/addWaypoint`;
-	var theResp = await fetch(url, { method: 'POST', body: JSON.stringify(data), headers: ApiHeaders });
-	var theJson = await theResp.json();
-	doAdd = false;
-
-	currentWaypoints = JSON.parse(JSON.stringify(theJson.modifiedWaypoints));
-	doRL(currentWaypoints);
-
-	return;
-}
-
 //............................................................
 function saveConfiguration() {
 
 	theConfiguration = {};
-	theConfiguration.inputLocation = document.getElementById("inputLocation").value;
+	theConfiguration.inputLocation = homeLocation;
 	theConfiguration.inputDist = document.getElementById("inputDist").value;
 	theConfiguration.inputUnits = document.getElementById("inputUnits").value;
 	theConfiguration.inputMode = document.getElementById("inputMode").value;
@@ -649,7 +595,7 @@ function saveConfiguration() {
 //..................................................................
 function useRouteLink() {
 
-	if (urlParams.has("inputLocation")) document.getElementById("inputLocation").value = urlParams.get("inputLocation");
+	if (urlParams.has("inputLocation")) homeLocation = urlParams.get("inputLocation");
 	if (urlParams.has("inputDist")) document.getElementById("inputDist").value = urlParams.get("inputDist");
 	if (urlParams.has("inputUnits")) document.getElementById("inputUnits").value = urlParams.get("inputUnits");
 	if (urlParams.has("inputMode")) {
