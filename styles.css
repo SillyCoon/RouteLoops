@@ -1,0 +1,131 @@
+/* Base Layout */
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: #1f2937;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* prevent vertical scroll */
+}
+
+/* Top controls */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 16px;
+  background: #ffffffcc;
+  backdrop-filter: saturate(120%) blur(3px);
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.form-field {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.controls input[type="text"],
+.controls .input,
+.controls select {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.select { min-width: 180px; }
+
+/* Buttons */
+.btn {
+  appearance: none;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #04AA6D;
+  color: #fff;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.06);
+}
+
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary:active { transform: translateY(1px); }
+
+/* Distance indicator */
+.distance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 18px;
+  background: #fde68a; /* warm yellow */
+  color: #111827;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+/* Map */
+.map {
+  flex: 1 1 auto;
+  min-height: 0; /* allow child to shrink inside flex */
+  width: 100%;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Outputs */
+.outputs {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px 16px;
+  padding: 12px 16px;
+  background: #ffffffcc;
+  border-top: 1px solid #e5e7eb;
+  align-items: center;
+}
+
+.outputs input[type="text"],
+.outputs select {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+
+.outputs label,
+.outputs span {
+  color: #374151;
+  font-size: 14px;
+}
+
+/* Responsive tweaks for bottom controls */
+@media (max-width: 768px) {
+  .outputs {
+    grid-template-columns: 1fr;
+  }
+  .controls {
+    gap: 10px 16px;
+  }
+}
+
+/* Images */
+img:hover { transform: scale(2.5); }

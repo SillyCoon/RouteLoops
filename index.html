@@ -18,100 +18,111 @@
       <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
 
-      <style>
-            html,
-            body {
-                  height: 100%;
-                  margin: 0;
-            }
-
-            .leaflet-container {
-                  height: 400px;
-                  width: 600px;
-                  max-width: 100%;
-                  max-height: 100%;
-            }
-      </style>
+      <link rel="stylesheet" type="text/css" href="./styles.css">
 
       <script src="https://unpkg.com/file-saver/dist/FileSaver.min.js"></script>
       <script type="module" src="clientCode.js"></script>
 </head>
 
 <body>
-      <div id="inputs">
-            Dist: <input type="text" value="10" id="inputDist" size="3" />
-            <!--Units:-->
-            <select id="inputUnits">
-                  <option value="imperial" selected>Imperial (Miles)</option>
-                  <option value="metric">Metric (Kilometers)</option>
-            </select>
-            <input type="button" id="route-loop" value="RouteLoop!"
-                  style="background-color: #04AA6D;padding: 5px 5px;font-size: 14px;border-radius: 20%;color:white;" />
+      <div id="inputs" class="controls">
+            <div class="form-field">
+                  <label for="inputDist">Dist</label>
+                  <input type="text" value="10" id="inputDist" size="3" />
+            </div>
+            <div class="form-field">
+                  <label for="inputUnits">Units</label>
+                  <select id="inputUnits">
+                        <option value="imperial" selected>Imperial (Miles)</option>
+                        <option value="metric">Metric (Kilometers)</option>
+                  </select>
+            </div>
+            <input type="button" id="route-loop" value="RouteLoop!" class="btn btn-primary" />
             &nbsp;&nbsp;
-            <span style="font-size:26px; background-color:yellow; color:black;">
+            <span class="distance-pill">
                   Distance: <span id="outDist"></span> <span id="distUnits"></span>
             </span>
             <br />
-            Mode: <select id="inputMode">
-                  <option value="driving-car">Car</option>
-                  <option value="cycling-regular" selected>Bike</option>
-                  <option value="cycling-road">Road Bike</option>
-                  <option value="cycling-mountain">Mountain Bike</option>
-                  <option value="cycling-electric">E-Bike</option>
-                  <option value="foot-walking">Walking</option>
-                  <option value="foot-hiking">Hiking</option>
-            </select>
-            Fitness Level: <select id="fitnessLevel">
-                  <option value=-1>Select</option>
-                  <option value=0>Novice</option>
-                  <option value=1 selected>Moderate</option>
-                  <option value=2>Amateur</option>
-                  <option value=3>Pro</option>
-            </select>
-            Green Factor <select id="greenFactor">
-                  <option value=-1>Select</option>
-                  <option value=0>Normal routing</option>
-                  <option value=1 selected>Prefer green areas</option>
-            </select>
-            Quiet Factor <select id="quietFactor">
-                  <option value=-1>Select</option>
-                  <option value=0>Normal routing</option>
-                  <option value=1 selected>Prefer quiet ways</option>
-            </select>
-            Rotation: <select id="inputRotation">
-                  <option value="clockwise" selected>Clockwise</option>
-                  <option value="counterclockwise">Counter-clockwise</option>
-            </select>
-            Avoid Highways: <select id="inputHighways">
-                  <option value="yes" selected>Yes</option>
-                  <option value="no">No</option>
-            </select>
+            <div class="form-field">
+                  <label for="inputMode">Mode</label>
+                  <select id="inputMode">
+                        <option value="driving-car">Car</option>
+                        <option value="cycling-regular" selected>Bike</option>
+                        <option value="cycling-road">Road Bike</option>
+                        <option value="cycling-mountain">Mountain Bike</option>
+                        <option value="cycling-electric">E-Bike</option>
+                        <option value="foot-walking">Walking</option>
+                        <option value="foot-hiking">Hiking</option>
+                  </select>
+            </div>
+            <div class="form-field">
+                  <label for="fitnessLevel">Fitness Level</label>
+                  <select id="fitnessLevel">
+                        <option value=-1>Select</option>
+                        <option value=0>Novice</option>
+                        <option value=1 selected>Moderate</option>
+                        <option value=2>Amateur</option>
+                        <option value=3>Pro</option>
+                  </select>
+            </div>
+            <div class="form-field">
+                  <label for="greenFactor">Green Factor</label>
+                  <select id="greenFactor">
+                        <option value=-1>Select</option>
+                        <option value=0>Normal routing</option>
+                        <option value=1 selected>Prefer green areas</option>
+                  </select>
+            </div>
+            <div class="form-field">
+                  <label for="quietFactor">Quiet Factor</label>
+                  <select id="quietFactor">
+                        <option value=-1>Select</option>
+                        <option value=0>Normal routing</option>
+                        <option value=1 selected>Prefer quiet ways</option>
+                  </select>
+            </div>
+            <div class="form-field">
+                  <label for="inputRotation">Rotation</label>
+                  <select id="inputRotation">
+                        <option value="clockwise" selected>Clockwise</option>
+                        <option value="counterclockwise">Counter-clockwise</option>
+                  </select>
+            </div>
+            <div class="form-field">
+                  <label for="inputHighways">Avoid Highways</label>
+                  <select id="inputHighways">
+                        <option value="yes" selected>Yes</option>
+                        <option value="no">No</option>
+                  </select>
+            </div>
       </div>
 
-      <div id="map" style="height:87%; width:100%;;"></div>
+      <div id="map" class="map"></div>
 
-      <div id="outputs">
+      <div id="outputs" class="outputs">
             <span style="display:none;">
                   Status: <span id="status"></span>
                   Messages: <span id="messages"></span>
                   # Calcs: <span id="calcs"></span>
                   Start/End: <span id="outLoc"></span>
             </span>
-            Route Name: <input type="text" placeHolder="Route Name" id="routeName" size="15" />
-            Output: <select id="createOutput">
-                  <option value="none" selected>Select output format</option>
-                  <option value="directions">Directions</option>
-                  <option value="sparseGPX">Sparse GPX</option>
-                  <option value="denseGPX">Dense GPX</option>
-                  <option value="tcx">TCX</option>
-                  <option value="google">Show on Google Maps</option>
-                  <option value="link">Link</option>
-            </select>
-            <style>
-                  img:hover {
-                        transform: scale(2.5);
-                  }
-            </style>
+            <div class="form-field">
+                  <label for="routeName">Route Name</label>
+                  <input type="text" placeHolder="Route Name" id="routeName" size="15" class="input" />
+            </div>
+            <div class="form-field">
+                  <label for="createOutput">Output</label>
+                  <select id="createOutput" class="select">
+                        <option value="none" selected>Select output format</option>
+                        <option value="directions">Directions</option>
+                        <option value="sparseGPX">Sparse GPX</option>
+                        <option value="denseGPX">Dense GPX</option>
+                        <option value="tcx">TCX</option>
+                        <option value="google">Show on Google Maps</option>
+                        <option value="link">Link</option>
+                  </select>
+            </div>
+
       </div>
 
 </body>
