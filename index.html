@@ -15,11 +15,7 @@
 
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
             integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
       <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-      <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
 
       <style>
@@ -38,10 +34,10 @@
       </style>
 
       <script src="https://unpkg.com/file-saver/dist/FileSaver.min.js"></script>
-      <script type="text/javascript" src="clientCode.js"></script>
+      <script type="module" src="clientCode.js"></script>
 </head>
 
-<body onload="initMap()">
+<body>
       <div id="inputs">
             Location: <input type="text" value="Wellesley MA 02482 USA" id="inputLocation" size="40" /
                   onchange="setAsHome()">
@@ -51,10 +47,8 @@
                   <option value="imperial" selected>Imperial (Miles)</option>
                   <option value="metric">Metric (Kilometers)</option>
             </select>
-            <!--<input type="button" value="RL!" onclick="callRlApi()"/>-->
-            <input type="button" value="RouteLoop!" onclick="doRL()"
+            <input type="button" id="route-loop" value="RouteLoop!"
                   style="background-color: #04AA6D;padding: 5px 5px;font-size: 14px;border-radius: 20%;color:white;" />
-            <!--<input type="button" value="RL!" onclick="getDirections()" />-->
             &nbsp;&nbsp;
             <span style="font-size:26px; background-color:yellow; color:black;">
                   Distance: <span id="outDist"></span> <span id="distUnits"></span>

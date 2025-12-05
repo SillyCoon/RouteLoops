@@ -1,3 +1,5 @@
+import 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+import 'https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js';
 //Include valid tokens for routers, if required.
 //Also, adjust the callback
 //Adjust all DoNotPush
@@ -16,6 +18,17 @@ var accessToken = null;
 var oauthToken = null;
 var hasRouteLink = false;
 var theConfiguration = {};
+let lastCounts = {cleaned:-1,total:-1};
+let newWaypoints = [];
+
+window.onload = () => { 
+	initMap()
+
+	document.querySelector('#route-loop').addEventListener('click', () => {
+		doRL();
+	});
+}
+
 
 async function initMap()
 {
