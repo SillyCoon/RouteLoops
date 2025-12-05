@@ -19,32 +19,11 @@ var theConfiguration = {};
 
 async function initMap()
 {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
     if (urlParams.has("routeLink")) hasRouteLink = true;
 
-    if (!hasRouteLink){
-	//var announcementURL = `${protocol}//${hostname}:${port}/announcement.html`;
-	//window.open(announcementURL,"A RouteLoops Announcement",`height=${height*0.95},width=${width*0.60},left=300,menubar=no,location=no,status=no,titlebar=no,top=100`);
-	var url = `${protocol}//${hostname}:${port}/readFile?fileName=announcement.html`;
-	var theResp = await fetch(url);
-	var theJson = await theResp.json();    
-	var theHTML = theJson.contents;
-	document.getElementById("innerAnnounce").innerHTML = theHTML;
-	document.getElementById("announceDiv").style.height = `${height*0.95}px`;
-	document.getElementById("announceDiv").style.width = `${width*0.60}px`;
-	document.getElementById("announceDiv").style.left = `${300}px`;
-	document.getElementById("announceDiv").style.top = `${50}px`;
-    }
-    else{
-	closeAnnounce();
-    }
-	
     map = L.map('map').setView([42.3, -71.3], 8);
 
     map.on('click', function(event) {
-	//alert(event.latlng);
 	var lat = event.latlng.lat;
 	var lng = event.latlng.lng;
 	if (doRemoval) doRemoveWaypoint(lat,lng);	
