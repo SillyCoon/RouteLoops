@@ -52,7 +52,7 @@
                   Distance: <span id="outDist"></span> <span id="distUnits"></span>
             </span>
             <br />
-            Mode: <select id="inputMode" onchange="changeMode()">
+            Mode: <select id="inputMode">
                   <option value="driving-car">Car</option>
                   <option value="cycling-regular" selected>Bike</option>
                   <option value="cycling-road">Road Bike</option>
@@ -98,7 +98,7 @@
                   Start/End: <span id="outLoc"></span>
             </span>
             Route Name: <input type="text" placeHolder="Route Name" id="routeName" size="15" />
-            Output: <select id="createOutput" onchange="generateOutput()">
+            Output: <select id="createOutput">
                   <option value="none" selected>Select output format</option>
                   <option value="directions">Directions</option>
                   <option value="sparseGPX">Sparse GPX</option>

@@ -33,6 +33,14 @@ window.onload = async () => {
 	document.querySelector('#route-loop').addEventListener('click', () => {
 		doRL();
 	});
+
+	document.querySelector("#createOutput").addEventListener("change", () => {
+		generateOutput();
+	});
+
+	document.querySelector("#inputMode").addEventListener("change", () => {
+		changeMode();
+	});
 }
 
 
