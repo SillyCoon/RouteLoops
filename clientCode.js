@@ -86,25 +86,6 @@ async function initMap() {
 	RoutingControl = L.Routing.control({
 		waypoints: [],
 		lineOptions: { styles: [{ color: 'red', opacity: 1, weight: 3 }] },
-		/*
-		createMarker: function(i, waypoint, n) {
-				const marker = L.marker(waypoint.latLng, {
-			draggable: true,
-			bounceOnAdd: false,
-			bounceOnAddOptions: {
-											duration: 1000,
-											height: 800,
-											function() {
-				(bindPopup(myPopup).openOn(map))
-											}
-			},
-			icon: L.icon({
-					iconUrl: './images/Home.png'	
-			})
-				})
-				return marker;
-				},
-		*/
 		router: routerToUse
 	}).addTo(map);
 
@@ -179,7 +160,6 @@ function displayMarker(index) {
 //.......................................
 function showDirectionMarkers() {
 	if (document.getElementById("directionMarkers").checked) {
-		//for (const marker of directionMarkers) marker.addTo(map);
 		displayMarker(0);
 	}
 	else {
@@ -217,30 +197,6 @@ async function doRL(waypointsIn) {
 	try { map.removeLayer(rawPath); } catch (err) { }
 	try { map.removeLayer(guidepointPath); } catch (err) { }
 	try { homeMarker.remove(); } catch (err) { }
-
-
-	/*
-	//Find the starting point of the RouteLoop
-	var theLocation = document.getElementById("inputLocation").value;
-	var encoded = encodeURI(theLocation);
-
-	//Geocode this starting location in to a Lat/Lng pair.
-	var url = `${protocol}//${hostname}:${port}/geocode?location=${encoded}`;
-	var theResp = await fetch(url);
-	var theJson = await theResp.json();    
-	var homeLocation = {lat:theJson.features[0].geometry.coordinates[1],lng:theJson.features[0].geometry.coordinates[0]};
-
-	//Center the map on this location.
-	if (typeof waypointsIn == "undefined")
-map.setView(new L.LatLng(homeLocation.lat,homeLocation.lng),18);
-
-	//Put a house marker at the start/end point.
-	var homeIcon = L.icon({
-iconUrl: './images/Home.png'	
-});
-
-	homeMarker = L.marker([homeLocation.lat, homeLocation.lng], {icon: homeIcon,draggable:true,title:theLocation}).addTo(map);    
-	*/
 
 	var initialWaypoints = [];
 	if (typeof waypointsIn == "undefined") {
