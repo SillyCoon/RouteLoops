@@ -179,18 +179,6 @@ function showDirectionMarkers(){
     return;
 }
 
-//.......................................
-function lockRoute(){
-    if (document.getElementById("lockRoute").checked){
-	RoutingControl["_line"].options.addWaypoints = false;
-	RoutingControl["_line"].options.extendToWaypoints = false;
-    }
-    else{
-	RoutingControl["_line"].options.addWaypoints = true;
-	RoutingControl["_line"].options.extendToWaypoints = true;
-    }
-    return;
-}
 //.........................................
 async function setAsHome()
 {
@@ -581,26 +569,6 @@ async function generateOutput()
     return;
 }
 
-//..................................................................
-function reverseRoute(){
-    if (currentWaypoints.length==0) return;
-    else{
-	currentWaypoints.reverse();
-	if (document.getElementById("inputRotation").value == "clockwise") document.getElementById("inputRotation").value = "counterclockwise"
-	else                                                               document.getElementById("inputRotation").value = "clockwise"
-	doRL(currentWaypoints);
-	return;
-    }
-}
-//..................................................................
-function removeWaypoint(){
-    if (currentWaypoints.length==0) return;
-    else{
-	doRemoval = true;
-	alert('Click on the route on, or near, the waypoint you want to remove.');
-	return;
-    }
-}
 //................................................................
 async function doRemoveWaypoint(lat,lng){
     
@@ -617,15 +585,6 @@ async function doRemoveWaypoint(lat,lng){
     return;
 }
 
-//..................................................................
-function addWaypoint(){
-    if (allPoints.length==0) return;
-    else{
-	doAdd = true;
-	alert('Click on the route on, or near, the location where you want a new waypoint.');
-	return;
-    }
-}
 //................................................................
 async function doAddWaypoint(lat,lng){
     
