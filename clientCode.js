@@ -239,23 +239,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 			waypoints.length = 0;
 			for (const waypoint of newWaypoints) waypoints.push(waypoint);
 
-			const theMode = document.getElementById("inputMode").value;
-			const inputHighways = document.getElementById("inputHighways").value;
-			const inputFerries = avoidFerries;
-			const fitnessLevel = document.getElementById("fitnessLevel").value;
-			const greenFactor = document.getElementById("greenFactor").value;
-			const quietFactor = document.getElementById("quietFactor").value;
-			//Generate a new path based on this new set of waypoints.
-			let url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
-			url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
-			url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
-			let waypointText = "";
-			for (const waypoint of waypoints)
-				waypointText += `${waypoint.lat},${waypoint.lng}|`;
-			waypointText = waypointText.slice(0, -1);
-			url += `&waypoints=${waypointText}`;
-			const theResp = await fetch(url);
-			const directionsJson = await theResp.json();
+			const directionsJson = await getDirections(waypoints);
 			allPoints = directionsJson.features[0].allPoints;
 		} else {
 			//No change, so that's it.
