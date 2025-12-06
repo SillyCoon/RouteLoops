@@ -477,16 +477,17 @@ async function generateOutput() {
 		}
 	}
 
+	const ApiHeaders = {
+		Accept: "application/json",
+		"Content-Type": "application/json",
+	};
+
 	let doPrint = false;
 	let doShow = false;
 
 	if (theType === "directions") {
 		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
 		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
-		const ApiHeaders = {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		};
 		const data = { allPoints: allPoints, units: units, speed: speed };
 		const url = `${protocol}//${hostname}:${port}/showDirections`;
 		const theResp = await fetch(url, {
@@ -500,10 +501,6 @@ async function generateOutput() {
 	}
 
 	if (theType === "sparseGPX") {
-		const ApiHeaders = {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		};
 		const data = { allPoints: allPoints };
 		const url = `${protocol}//${hostname}:${port}/makeSparseGPX`;
 		const theResp = await fetch(url, {
@@ -516,10 +513,6 @@ async function generateOutput() {
 	}
 
 	if (theType === "denseGPX") {
-		const ApiHeaders = {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		};
 		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
 		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
 		const data = { allPoints: allPoints, units: units, speed: speed };
@@ -534,10 +527,6 @@ async function generateOutput() {
 	}
 
 	if (theType === "tcx") {
-		const ApiHeaders = {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		};
 		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
 		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
 		const advance = prompt(
