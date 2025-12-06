@@ -129,7 +129,7 @@ async function doRL(waypointsIn) {
 
 	const initialWaypoints = waypointsIn ?? (await getRLpoints());
 	//Add the starting location as both the first, and the last, guide point.
-	var guidePoints = [];
+	const guidePoints = [];
 	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
 	for (const waypoint of initialWaypoints)
 		guidePoints.push(new L.LatLng(waypoint.lat, waypoint.lng));
@@ -147,7 +147,7 @@ async function doRL(waypointsIn) {
 
 	//Get a bounding box used to zoom the map to a more reasonable size.
 	const RLBounds = guidepointPath.getBounds();
-	if (typeof waypointsIn == "undefined") map.fitBounds(RLBounds);
+	if (!waypointsIn) map.fitBounds(RLBounds);
 
 	//Call the directions service using the guide point as waypoints.
 	var theMode = document.getElementById("inputMode").value;
