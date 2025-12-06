@@ -1,30 +1,30 @@
-import express from 'express';
-import bodyParser from 'body-parser';
-import * as fs from 'fs';
-import cors from 'cors';
-import fetch from 'node-fetch';
-import dotenv from 'dotenv';
+import express from "express";
+import bodyParser from "body-parser";
+import * as fs from "fs";
+import cors from "cors";
+import fetch from "node-fetch";
+import dotenv from "dotenv";
 dotenv.config();
 
 var app = express();
 app.use(cors());
-app.use(express.static('./'));
-app.use(bodyParser.json({ limit: '50mb' }));
-app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.static("./"));
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-app.get('/info', info);
-app.get('/directions', directions);
-app.post('/directions', directions);
-app.get('/getRLpoints', getRLpoints);
-app.post('/getRLpoints', getRLpoints);
-app.get('/cleanTails', cleanTails);
-app.post('/cleanTails', cleanTails);
-app.get('/modifyDirections', modifyDirections);
-app.post('/modifyDirections', modifyDirections);
-app.post('/showDirections', showDirections);
-app.post('/makeSparseGPX', makeSparseGPX);
-app.post('/makeDenseGPX', makeDenseGPX);
-app.post('/makeTCX', makeTCX);
+app.get("/info", info);
+app.get("/directions", directions);
+app.post("/directions", directions);
+app.get("/getRLpoints", getRLpoints);
+app.post("/getRLpoints", getRLpoints);
+app.get("/cleanTails", cleanTails);
+app.post("/cleanTails", cleanTails);
+app.get("/modifyDirections", modifyDirections);
+app.post("/modifyDirections", modifyDirections);
+app.post("/showDirections", showDirections);
+app.post("/makeSparseGPX", makeSparseGPX);
+app.post("/makeDenseGPX", makeDenseGPX);
+app.post("/makeTCX", makeTCX);
 
 // Setup Server
 const thePort = 8080;
@@ -48,7 +48,12 @@ https.createServer(
 //*/
 
 //Use this to hold the request token, request token secret pairs.
-var secrets = { "310fd994-6c6f-4a38-8582-16cb3edf743b": { secret: "LkjNDk4xZQJyY0S9Wik5KNe6bvG097fuYww", timestamp: 1743559197 } };
+var secrets = {
+	"310fd994-6c6f-4a38-8582-16cb3edf743b": {
+		secret: "LkjNDk4xZQJyY0S9Wik5KNe6bvG097fuYww",
+		timestamp: 1743559197,
+	},
+};
 
 function cleanUpOldSecrets() {
 	//Clean up old secrets
@@ -57,21 +62,31 @@ function cleanUpOldSecrets() {
 	var removed = 0;
 	for (const token in secrets) {
 		if (itIsNow - secrets[token]["timestamp"] > oldestAllowed) {
-			console.log(`Removing the secret associated with token ${token} due to age.`);
+			console.log(
+				`Removing the secret associated with token ${token} due to age.`,
+			);
 			delete secrets[token];
 			removed += 1;
 		}
 	}
-	if (removed == 0) console.log(`No tokens have yet aged out.  I am holding onto secrets for ${Object.keys(secrets).length} tokens.`);
+	if (removed == 0)
+		console.log(
+			`No tokens have yet aged out.  I am holding onto secrets for ${Object.keys(secrets).length} tokens.`,
+		);
 	return;
 }
 cleanUpOldSecrets();
-const cleanUpInterval = setInterval(function () { cleanUpOldSecrets(); }, 24 * 60 * 60 * 1000)
+const cleanUpInterval = setInterval(
+	function () {
+		cleanUpOldSecrets();
+	},
+	24 * 60 * 60 * 1000,
+);
 
 //.......................................................................
 function info(req, res, next) {
-	var html = fs.readFileSync('./info.html');
-	res.writeHead(200, { 'Content-type': 'text/html' });
+	var html = fs.readFileSync("./info.html");
+	res.writeHead(200, { "Content-type": "text/html" });
 	res.end(html);
 
 	return;
@@ -79,31 +94,40 @@ function info(req, res, next) {
 //..................................................................
 
 async function directions(req, res, next) {
-
 	var method = req.method;
 	var url = req.url;
 
-	if (method.toLowerCase() == 'get') {
+	if (method.toLowerCase() == "get") {
 		//console.log('url ' + url);
-		var split1 = url.split('?');
-		var result = { lat: null, lng: null, highways: null, ferries: null, waypoints: null, mode: null, fitnessLevel: null, greenFactor: null, quietFactor: null };
+		var split1 = url.split("?");
+		var result = {
+			lat: null,
+			lng: null,
+			highways: null,
+			ferries: null,
+			waypoints: null,
+			mode: null,
+			fitnessLevel: null,
+			greenFactor: null,
+			quietFactor: null,
+		};
 		if (split1.length > 1) {
 			var query = split1[1];
-			var split2 = query.split('&');
+			var split2 = query.split("&");
 			for (var i = 0; i < split2.length; i++) {
-				var split3 = split2[i].split('=');
-				if (split3[0] == 'lat') result.lat = split3[1];
-				if (split3[0] == 'lng') result.lng = split3[1];
-				if (split3[0] == 'highways') result.highways = split3[1];
-				if (split3[0] == 'ferries') result.ferries = split3[1];
-				if (split3[0] == 'waypoints') result.waypoints = split3[1];
-				if (split3[0] == 'mode') result.mode = split3[1];
-				if (split3[0] == 'fitnessLevel') result.fitnessLevel = split3[1];
-				if (split3[0] == 'greenFactor') result.greenFactor = split3[1];
-				if (split3[0] == 'quietFactor') result.quietFactor = split3[1];
+				var split3 = split2[i].split("=");
+				if (split3[0] == "lat") result.lat = split3[1];
+				if (split3[0] == "lng") result.lng = split3[1];
+				if (split3[0] == "highways") result.highways = split3[1];
+				if (split3[0] == "ferries") result.ferries = split3[1];
+				if (split3[0] == "waypoints") result.waypoints = split3[1];
+				if (split3[0] == "mode") result.mode = split3[1];
+				if (split3[0] == "fitnessLevel") result.fitnessLevel = split3[1];
+				if (split3[0] == "greenFactor") result.greenFactor = split3[1];
+				if (split3[0] == "quietFactor") result.quietFactor = split3[1];
 			}
 		}
-		console.log('Doing a directions GET call:');
+		console.log("Doing a directions GET call:");
 		//console.log(JSON.stringify(result,null,2));
 
 		var avoids = "tolls";
@@ -114,9 +138,10 @@ async function directions(req, res, next) {
 		var key = process.env.OSM_API_KEY;
 
 		var ApiHeaders = {
-			'Accept': 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8',
-			'Authorization': key,
-			'Content-Type': 'application/json; charset=utf-8'
+			Accept:
+				"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
+			Authorization: key,
+			"Content-Type": "application/json; charset=utf-8",
 		};
 		var theWayPoints = result.waypoints.split("|");
 		var wpts = [];
@@ -136,12 +161,21 @@ async function directions(req, res, next) {
 		if (result.highways == "yes") result.tolls = "yes";
 		var options = {};
 		options.avoid_features = [];
-		if (result.mode.indexOf("driv") >= 0 && result.tolls == "yes") options.avoid_features.push("tollways");
-		if ((result.mode.indexOf("driv") >= 0 || result.mode.indexOf("cycl") >= 0 || result.mode.indexOf("foot") >= 0) && result.ferries == "yes") options.avoid_features.push("ferries");
-		if (result.mode.indexOf("driv") >= 0 && result.highways == "yes") options.avoid_features.push("highways");
+		if (result.mode.indexOf("driv") >= 0 && result.tolls == "yes")
+			options.avoid_features.push("tollways");
+		if (
+			(result.mode.indexOf("driv") >= 0 ||
+				result.mode.indexOf("cycl") >= 0 ||
+				result.mode.indexOf("foot") >= 0) &&
+			result.ferries == "yes"
+		)
+			options.avoid_features.push("ferries");
+		if (result.mode.indexOf("driv") >= 0 && result.highways == "yes")
+			options.avoid_features.push("highways");
 
 		options.profile_params = { weightings: {} };
-		options.profile_params.weightings.steepness_difficulty = 1 * result.fitnessLevel;
+		options.profile_params.weightings.steepness_difficulty =
+			1 * result.fitnessLevel;
 		options.profile_params.weightings.green = 1 * result.greenFactor;
 		options.profile_params.weightings.quiet = 1 * result.quietFactor;
 
@@ -154,7 +188,11 @@ async function directions(req, res, next) {
 
 			var url = api_root;
 			try {
-				var response = await fetch(url, { method: 'POST', body: JSON.stringify(data), headers: ApiHeaders });
+				var response = await fetch(url, {
+					method: "POST",
+					body: JSON.stringify(data),
+					headers: ApiHeaders,
+				});
 				var theJson = await response.json();
 			} catch (error) {
 				console.log("Error fetching directions from OpenRouteService:", error);
@@ -168,7 +206,9 @@ async function directions(req, res, next) {
 
 			//It is possible for this routing call to fail.  Try and solve that problem if you can.
 			if (theJson.hasOwnProperty("error")) {
-				if (theJson.error.message.indexOf("Could not find routable point") >= 0) {
+				if (
+					theJson.error.message.indexOf("Could not find routable point") >= 0
+				) {
 					var split = theJson.error.message.split("coordinate");
 					var info = split[1].trim();
 					split = info.split(":");
@@ -176,23 +216,22 @@ async function directions(req, res, next) {
 					var badLL = split[1].trim();
 					split = badLL.split(" ");
 					var badLatLng = { lat: split[0], lng: split[1] };
-					console.log(`Coordinate ${badCoord} at ${JSON.stringify(badLatLng)} is bad, so try again without it.`);
+					console.log(
+						`Coordinate ${badCoord} at ${JSON.stringify(badLatLng)} is bad, so try again without it.`,
+					);
 					coordinates.splice(badCoord, 1);
 					tryAgain = true;
-				}
-				else if (theJson.error.message.indexOf("150000") >= 0) {
+				} else if (theJson.error.message.indexOf("150000") >= 0) {
 					directionsError = theJson.error.message;
 					tryAgain = false;
 				}
-			}
-			else {
+			} else {
 				tryAgain = false;
 			}
-			await new Promise(resolve => setTimeout(resolve, 1000));  //Avoid hitting rate limits.  Node.js method of sleeping.
+			await new Promise((resolve) => setTimeout(resolve, 1000)); //Avoid hitting rate limits.  Node.js method of sleeping.
 		}
 
 		if (directionsError == null) {
-
 			//Get the detailed road structure, and put it into the returned JSON under step/polyline/array
 			for (const feature of theJson.features) {
 				//Fill the allPoints array, which is the detailed list of lat,lng points for this route.
@@ -202,7 +241,10 @@ async function directions(req, res, next) {
 				}
 				//Remove any duplicates.
 				for (var a = allPoints.length - 1; a >= 1; a--) {
-					if (allPoints[a].lat == allPoints[a - 1].lat && allPoints[a].lng == allPoints[a - 1].lng) {
+					if (
+						allPoints[a].lat == allPoints[a - 1].lat &&
+						allPoints[a].lng == allPoints[a - 1].lng
+					) {
 						allPoints.splice(a, 1);
 					}
 				}
@@ -210,7 +252,12 @@ async function directions(req, res, next) {
 				var cumulativeDistance = 0;
 				allPoints[0].cumulativeDistanceKm = 0;
 				for (var a = 1; a < allPoints.length; a++) {
-					cumulativeDistance += LatLngDist(allPoints[a - 1].lat, allPoints[a - 1].lng, allPoints[a].lat, allPoints[a].lng);
+					cumulativeDistance += LatLngDist(
+						allPoints[a - 1].lat,
+						allPoints[a - 1].lng,
+						allPoints[a].lat,
+						allPoints[a].lng,
+					);
 					allPoints[a].cumulativeDistanceKm = cumulativeDistance;
 				}
 				feature.totalDistanceKm = cumulativeDistance;
@@ -219,7 +266,9 @@ async function directions(req, res, next) {
 					for (const step of segment.steps) {
 						var atPoint = step.way_points[0];
 						var instructions = step.instruction;
-						try { allPoints[atPoint].instructions = instructions; } catch (err) { }
+						try {
+							allPoints[atPoint].instructions = instructions;
+						} catch (err) {}
 					}
 				}
 				//Get distance to next instruction
@@ -227,7 +276,12 @@ async function directions(req, res, next) {
 					if (!allPoints[a].hasOwnProperty("instructions")) continue;
 					var distanceToNext = 0;
 					for (var b = a + 1; b < allPoints.length; b++) {
-						distanceToNext += LatLngDist(allPoints[b - 1].lat, allPoints[b - 1].lng, allPoints[b].lat, allPoints[b].lng);
+						distanceToNext += LatLngDist(
+							allPoints[b - 1].lat,
+							allPoints[b - 1].lng,
+							allPoints[b].lat,
+							allPoints[b].lng,
+						);
 						if (allPoints[b].hasOwnProperty("instructions")) break;
 					}
 					allPoints[a].distanceToNextKm = distanceToNext;
@@ -239,36 +293,32 @@ async function directions(req, res, next) {
 			}
 
 			res.json(theJson);
-		}
-		else {  //there has been an error
+		} else {
+			//there has been an error
 			res.json({ status: "NG", error: directionsError });
 		}
+	} else if (method.toLowerCase() == "post") {
 	}
-
-	else if (method.toLowerCase() == 'post') {
-	}
-
 }
 
 //.............................................................................
 async function geocode(req, res, next) {
-
 	var method = req.method;
 	var url = req.url;
 
-	if (method.toLowerCase() == 'get') {
+	if (method.toLowerCase() == "get") {
 		//console.log('url ' + url);
-		var split1 = url.split('?');
+		var split1 = url.split("?");
 		var result = { location: null };
 		if (split1.length > 1) {
 			var query = split1[1];
-			var split2 = query.split('&');
+			var split2 = query.split("&");
 			for (var i = 0; i < split2.length; i++) {
-				var split3 = split2[i].split('=');
-				if (split3[0] == 'location') result.location = split3[1];
+				var split3 = split2[i].split("=");
+				if (split3[0] == "location") result.location = split3[1];
 			}
 		}
-		console.log('Doing a geocode GET call:');
+		console.log("Doing a geocode GET call:");
 		console.log(JSON.stringify(result, null, 2));
 
 		var api_root = "https://api.openrouteservice.org/geocode/search?";
@@ -281,11 +331,8 @@ async function geocode(req, res, next) {
 		const theJson = await response.json();
 		//console.log(JSON.stringify(theJson));
 		res.json(theJson);
+	} else if (method.toLowerCase() == "post") {
 	}
-
-	else if (method.toLowerCase() == 'post') {
-	}
-
 }
 
 //...........................................................................................
@@ -293,35 +340,43 @@ async function geocode(req, res, next) {
 async function getRLpoints(req, res, next) {
 	var method = req.method;
 	var url = req.url;
-	if (method.toLowerCase() == 'get') {
+	if (method.toLowerCase() == "get") {
 		//console.log('url ' + url);
-		var split1 = url.split('?');
-		var result = { lat: null, lng: null, dist: null, units: null, method: null, direction: null, rotation: null };
+		var split1 = url.split("?");
+		var result = {
+			lat: null,
+			lng: null,
+			dist: null,
+			units: null,
+			method: null,
+			direction: null,
+			rotation: null,
+		};
 		if (split1.length > 1) {
 			var query = split1[1];
-			var split2 = query.split('&');
+			var split2 = query.split("&");
 			for (var i = 0; i < split2.length; i++) {
-				var split3 = split2[i].split('=');
-				if (split3[0] == 'lat') result.lat = split3[1];
-				if (split3[0] == 'lng') result.lng = split3[1];
-				if (split3[0] == 'dist') result.dist = split3[1];
-				if (split3[0] == 'units') result.units = split3[1];
-				if (split3[0] == 'method') result.method = split3[1];
-				if (split3[0] == 'direction') result.direction = split3[1];
-				if (split3[0] == 'rotation') result.rotation = split3[1];
+				var split3 = split2[i].split("=");
+				if (split3[0] == "lat") result.lat = split3[1];
+				if (split3[0] == "lng") result.lng = split3[1];
+				if (split3[0] == "dist") result.dist = split3[1];
+				if (split3[0] == "units") result.units = split3[1];
+				if (split3[0] == "method") result.method = split3[1];
+				if (split3[0] == "direction") result.direction = split3[1];
+				if (split3[0] == "rotation") result.rotation = split3[1];
 			}
 		}
 
 		var LatLng = { lat: 1 * result.lat, lng: 1 * result.lng };
 
 		//console.log('Doing a getRLpoints GET call:');
-		//console.log(JSON.stringify(result,null,2));	
+		//console.log(JSON.stringify(result,null,2));
 
 		var targetLengthInMeters = result.dist;
 
 		var units = result.units;
 		if (units == null) units = "imperial";
-		if (units == "imperial") targetLengthInMeters *= 5280 * 12 * 2.54 / 100;
+		if (units == "imperial") targetLengthInMeters *= (5280 * 12 * 2.54) / 100;
 		if (units == "metric") targetLengthInMeters *= 1000;
 
 		var direction = result.direction;
@@ -339,20 +394,25 @@ async function getRLpoints(req, res, next) {
 
 		console.log(`picMethod of ${pickMethod} in direction ${direction} `);
 		var rlPoints = [];
-		if (pickMethod == "circular") rlPoints = circleRoute(LatLng, targetLengthInMeters, direction, rotation);
-		if (pickMethod == "rectangular") rlPoints = rectangleRoute(LatLng, targetLengthInMeters, direction, rotation);
-		if (pickMethod == "figure8") rlPoints = fig8Route(LatLng, targetLengthInMeters, direction, rotation);
+		if (pickMethod == "circular")
+			rlPoints = circleRoute(LatLng, targetLengthInMeters, direction, rotation);
+		if (pickMethod == "rectangular")
+			rlPoints = rectangleRoute(
+				LatLng,
+				targetLengthInMeters,
+				direction,
+				rotation,
+			);
+		if (pickMethod == "figure8")
+			rlPoints = fig8Route(LatLng, targetLengthInMeters, direction, rotation);
 
 		res.json(rlPoints);
-	}
-
-	else if (method.toLowerCase() == 'post') {
+	} else if (method.toLowerCase() == "post") {
 	}
 }
 
 //........................................................................................
 function circleRoute(BaseLocation, length, travelHeading, rotation) {
-
 	//alert("Doing a circular route");
 
 	var radius = length / 2 / Math.PI;
@@ -362,25 +422,33 @@ function circleRoute(BaseLocation, length, travelHeading, rotation) {
 	var rlPoints = [];
 
 	//Choose a direction for this value
-	var direction = Math.random() * 2 * Math.PI;  //in radians
+	var direction = Math.random() * 2 * Math.PI; //in radians
 	if (travelHeading == 0)
-		direction = Math.random() * 2 * Math.PI;  //in radians
-	else if (travelHeading == 1) //this is North
-		direction = Math.random() * Math.PI / 4 + 3 * Math.PI / 8;
-	else if (travelHeading == 2) //this is Northeast
-		direction = Math.random() * Math.PI / 4 + 1 * Math.PI / 8;
-	else if (travelHeading == 3) //this is East
-		direction = Math.random() * Math.PI / 4 - Math.PI / 8;
-	else if (travelHeading == 4) //this is Southeast
-		direction = Math.random() * Math.PI / 4 + 13 * Math.PI / 8;
-	else if (travelHeading == 5) //this is South
-		direction = Math.random() * Math.PI / 4 + 11 * Math.PI / 8;
-	else if (travelHeading == 6) //this is Southwest
-		direction = Math.random() * Math.PI / 4 + 9 * Math.PI / 8;
-	else if (travelHeading == 7) //this is West
-		direction = Math.random() * Math.PI / 4 + 7 * Math.PI / 8;
-	else if (travelHeading == 8) //this is Northwest
-		direction = Math.random() * Math.PI / 4 + 5 * Math.PI / 8;
+		direction = Math.random() * 2 * Math.PI; //in radians
+	else if (travelHeading == 1)
+		//this is North
+		direction = (Math.random() * Math.PI) / 4 + (3 * Math.PI) / 8;
+	else if (travelHeading == 2)
+		//this is Northeast
+		direction = (Math.random() * Math.PI) / 4 + (1 * Math.PI) / 8;
+	else if (travelHeading == 3)
+		//this is East
+		direction = (Math.random() * Math.PI) / 4 - Math.PI / 8;
+	else if (travelHeading == 4)
+		//this is Southeast
+		direction = (Math.random() * Math.PI) / 4 + (13 * Math.PI) / 8;
+	else if (travelHeading == 5)
+		//this is South
+		direction = (Math.random() * Math.PI) / 4 + (11 * Math.PI) / 8;
+	else if (travelHeading == 6)
+		//this is Southwest
+		direction = (Math.random() * Math.PI) / 4 + (9 * Math.PI) / 8;
+	else if (travelHeading == 7)
+		//this is West
+		direction = (Math.random() * Math.PI) / 4 + (7 * Math.PI) / 8;
+	else if (travelHeading == 8)
+		//this is Northwest
+		direction = (Math.random() * Math.PI) / 4 + (5 * Math.PI) / 8;
 	//log("The direction of this point with be at " + direction*180/Math.PI + " degrees.");
 
 	//Locate the point that is radius meters away from the Base Location in the direction chosen.
@@ -388,8 +456,11 @@ function circleRoute(BaseLocation, length, travelHeading, rotation) {
 	var dx = radius * Math.cos(direction);
 	var dy = radius * Math.sin(direction);
 	var delta_lat = dy / 110540;
-	var delta_lng = dx / (111320 * Math.cos(BaseLocation.lat * Math.PI / 180));
-	var center = { lat: BaseLocation.lat + delta_lat, lng: BaseLocation.lng + delta_lng };
+	var delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	var center = {
+		lat: BaseLocation.lat + delta_lat,
+		lng: BaseLocation.lng + delta_lng,
+	};
 	//log(" The center point will be at " + center);
 	//placeMarker(center,'Circle Center');
 
@@ -401,11 +472,11 @@ function circleRoute(BaseLocation, length, travelHeading, rotation) {
 	else sign = +1;
 
 	for (var i = 1; i < circlePoints + 1; i++) {
-		deg.push(deg[i - 1] + sign * 2 * Math.PI / (circlePoints + 1));
+		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
 		dx = radius * Math.cos(deg[i]);
 		dy = radius * Math.sin(deg[i]);
 		delta_lat = dy / 110540;
-		delta_lng = dx / (111320 * Math.cos(center.lat * Math.PI / 180));
+		delta_lng = dx / (111320 * Math.cos((center.lat * Math.PI) / 180));
 		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
 	}
 
@@ -414,7 +485,6 @@ function circleRoute(BaseLocation, length, travelHeading, rotation) {
 
 //.........................................................................................
 function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
-
 	//alert("Doing a rectangular route");
 
 	var direction = 0;
@@ -423,7 +493,7 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 
 	//Choose a ratio of height to width.  This may be more complex than necessary, but what the heck.
 	var maxRatio = 5;
-	var minRatio = 1. / maxRatio;
+	var minRatio = 1 / maxRatio;
 	var deltaRatio = maxRatio - minRatio;
 	var ratio = Math.random() * deltaRatio + minRatio;
 	//alert("Ratio for this box is " + ratio);
@@ -435,23 +505,31 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 
 	//Choose a direction for this value
 	if (travelHeading == 0)
-		var direction = Math.random() * 2 * Math.PI;  //in radians
-	else if (travelHeading == 1) //this is North
-		var direction = Math.random() * Math.PI / 4 + 3 * Math.PI / 8;
-	else if (travelHeading == 2) //this is Northeast
-		var direction = Math.random() * Math.PI / 4 + 1 * Math.PI / 8;
-	else if (travelHeading == 3) //this is East
-		var direction = Math.random() * Math.PI / 4 - Math.PI / 8;
-	else if (travelHeading == 4) //this is Southeast
-		var direction = Math.random() * Math.PI / 4 + 13 * Math.PI / 8;
-	else if (travelHeading == 5) //this is South
-		var direction = Math.random() * Math.PI / 4 + 11 * Math.PI / 8;
-	else if (travelHeading == 6) //this is Southwest
-		var direction = Math.random() * Math.PI / 4 + 9 * Math.PI / 8;
-	else if (travelHeading == 7) //this is West
-		var direction = Math.random() * Math.PI / 4 + 7 * Math.PI / 8;
-	else if (travelHeading == 8) //this is Northwest
-		var direction = Math.random() * Math.PI / 4 + 5 * Math.PI / 8;
+		var direction = Math.random() * 2 * Math.PI; //in radians
+	else if (travelHeading == 1)
+		//this is North
+		var direction = (Math.random() * Math.PI) / 4 + (3 * Math.PI) / 8;
+	else if (travelHeading == 2)
+		//this is Northeast
+		var direction = (Math.random() * Math.PI) / 4 + (1 * Math.PI) / 8;
+	else if (travelHeading == 3)
+		//this is East
+		var direction = (Math.random() * Math.PI) / 4 - Math.PI / 8;
+	else if (travelHeading == 4)
+		//this is Southeast
+		var direction = (Math.random() * Math.PI) / 4 + (13 * Math.PI) / 8;
+	else if (travelHeading == 5)
+		//this is South
+		var direction = (Math.random() * Math.PI) / 4 + (11 * Math.PI) / 8;
+	else if (travelHeading == 6)
+		//this is Southwest
+		var direction = (Math.random() * Math.PI) / 4 + (9 * Math.PI) / 8;
+	else if (travelHeading == 7)
+		//this is West
+		var direction = (Math.random() * Math.PI) / 4 + (7 * Math.PI) / 8;
+	else if (travelHeading == 8)
+		//this is Northwest
+		var direction = (Math.random() * Math.PI) / 4 + (5 * Math.PI) / 8;
 	//log("The direction of this point with be at " + direction*180/Math.PI + " degrees.");
 
 	var sign = -1;
@@ -465,8 +543,11 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 	var dx = height * Math.cos(angle);
 	var dy = height * Math.sin(angle);
 	var delta_lat = dy / 110540;
-	var delta_lng = dx / (111320 * Math.cos(BaseLocation.lat * Math.PI / 180));
-	rlPoints.push({ lat: BaseLocation.lat + delta_lat, lng: BaseLocation.lng + delta_lng });
+	var delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	rlPoints.push({
+		lat: BaseLocation.lat + delta_lat,
+		lng: BaseLocation.lng + delta_lng,
+	});
 	//alert(" The first corner point will be at " + p1);
 	//placeMarker(p1,'h corner');
 
@@ -474,26 +555,30 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 	var dx = diagonal * Math.cos(angle);
 	var dy = diagonal * Math.sin(angle);
 	var delta_lat = dy / 110540;
-	var delta_lng = dx / (111320 * Math.cos(BaseLocation.lat * Math.PI / 180));
-	rlPoints.push({ lat: BaseLocation.lat + delta_lat, lng: BaseLocation.lng + delta_lng });
+	var delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	rlPoints.push({
+		lat: BaseLocation.lat + delta_lat,
+		lng: BaseLocation.lng + delta_lng,
+	});
 	//alert(" The second corner point will be at " + p2);
 	//placeMarker(p2,'d corner');
 
-	angle = sign * Math.PI / 2 + direction; // This is defined to be the point along the "width" direction
+	angle = (sign * Math.PI) / 2 + direction; // This is defined to be the point along the "width" direction
 	var dx = width * Math.cos(angle);
 	var dy = width * Math.sin(angle);
 	var delta_lat = dy / 110540;
-	var delta_lng = dx / (111320 * Math.cos(BaseLocation.lat * Math.PI / 180));
-	rlPoints.push({ lat: BaseLocation.lat + delta_lat, lng: BaseLocation.lng + delta_lng });
+	var delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	rlPoints.push({
+		lat: BaseLocation.lat + delta_lat,
+		lng: BaseLocation.lng + delta_lng,
+	});
 	//alert(" The second corner point will be at " + p3);
 	//placeMarker(p3,'w corner');
 
 	return rlPoints;
-
 }
 //.............................................................
 function fig8Route(BaseLocation, length, travelHeading, rotation) {
-
 	/*
 		The figure 8 will be done as 2 circles, each of half the desired length.
 	*/
@@ -511,23 +596,31 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 
 	//Choose a direction for this value.  Kind of weird with the figure 8, but let's let it be for now.
 	if (travelHeading == 0)
-		var direction = Math.random() * 2 * Math.PI;  //in radians
-	else if (travelHeading == 1) //this is North
-		var direction = Math.random() * Math.PI / 4 + 3 * Math.PI / 8;
-	else if (travelHeading == 2) //this is Northeast
-		var direction = Math.random() * Math.PI / 4 + 1 * Math.PI / 8;
-	else if (travelHeading == 3) //this is East
-		var direction = Math.random() * Math.PI / 4 - Math.PI / 8;
-	else if (travelHeading == 4) //this is Southeast
-		var direction = Math.random() * Math.PI / 4 + 13 * Math.PI / 8;
-	else if (travelHeading == 5) //this is South
-		var direction = Math.random() * Math.PI / 4 + 11 * Math.PI / 8;
-	else if (travelHeading == 6) //this is Southwest
-		var direction = Math.random() * Math.PI / 4 + 9 * Math.PI / 8;
-	else if (travelHeading == 7) //this is West
-		var direction = Math.random() * Math.PI / 4 + 7 * Math.PI / 8;
-	else if (travelHeading == 8) //this is Northwest
-		var direction = Math.random() * Math.PI / 4 + 5 * Math.PI / 8;
+		var direction = Math.random() * 2 * Math.PI; //in radians
+	else if (travelHeading == 1)
+		//this is North
+		var direction = (Math.random() * Math.PI) / 4 + (3 * Math.PI) / 8;
+	else if (travelHeading == 2)
+		//this is Northeast
+		var direction = (Math.random() * Math.PI) / 4 + (1 * Math.PI) / 8;
+	else if (travelHeading == 3)
+		//this is East
+		var direction = (Math.random() * Math.PI) / 4 - Math.PI / 8;
+	else if (travelHeading == 4)
+		//this is Southeast
+		var direction = (Math.random() * Math.PI) / 4 + (13 * Math.PI) / 8;
+	else if (travelHeading == 5)
+		//this is South
+		var direction = (Math.random() * Math.PI) / 4 + (11 * Math.PI) / 8;
+	else if (travelHeading == 6)
+		//this is Southwest
+		var direction = (Math.random() * Math.PI) / 4 + (9 * Math.PI) / 8;
+	else if (travelHeading == 7)
+		//this is West
+		var direction = (Math.random() * Math.PI) / 4 + (7 * Math.PI) / 8;
+	else if (travelHeading == 8)
+		//this is Northwest
+		var direction = (Math.random() * Math.PI) / 4 + (5 * Math.PI) / 8;
 	//log("The direction of the first figure 8 point with be at " + direction*180/Math.PI + " degrees.");
 
 	//Locate the point that is radius meters away from the Base Location in the direction chosen.
@@ -535,8 +628,11 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 	var dx = radius * Math.cos(direction);
 	var dy = radius * Math.sin(direction);
 	var delta_lat = dy / 110540;
-	var delta_lng = dx / (111320 * Math.cos(BaseLocation.lat * Math.PI / 180));
-	var center = { lat: BaseLocation.lat + delta_lat, lng: BaseLocation.lng + delta_lng };
+	var delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	var center = {
+		lat: BaseLocation.lat + delta_lat,
+		lng: BaseLocation.lng + delta_lng,
+	};
 	//log(" The first figure 8 center point will be at " + center);
 	//placeMarker(center,'Circle Center');
 
@@ -550,11 +646,11 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 	rlpCount = 0;
 
 	for (var i = 1; i < circlePoints + 1; i++) {
-		deg.push(deg[i - 1] + sign * 2 * Math.PI / (circlePoints + 1));
+		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
 		dx = radius * Math.cos(deg[i]);
 		dy = radius * Math.sin(deg[i]);
 		delta_lat = dy / 110540;
-		delta_lng = dx / (111320 * Math.cos(center.lat * Math.PI / 180));
+		delta_lng = dx / (111320 * Math.cos((center.lat * Math.PI) / 180));
 		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
 		rlpCount++;
 		//placeMarker(pts[i-1],'p'+i);
@@ -570,8 +666,11 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 	var dx = radius * Math.cos(direction);
 	var dy = radius * Math.sin(direction);
 	var delta_lat = dy / 110540;
-	var delta_lng = dx / (111320 * Math.cos(BaseLocation.lat * Math.PI / 180));
-	center = { lat: BaseLocation.lat + delta_lat, lng: BaseLocation.lng + delta_lng };
+	var delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	center = {
+		lat: BaseLocation.lat + delta_lat,
+		lng: BaseLocation.lng + delta_lng,
+	};
 	//log(" The second figure 8 center point will be at " + center);
 	//placeMarker(center,'Circle Center');
 
@@ -581,31 +680,35 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 	deg.push(direction + Math.PI);
 	//This part is a little tricky, but to make a real figure 8 I have to reverse the orientation of turns.  Do it for now.
 	var sign = +1;
-	if (rotation == 'clockwise') sign = +1;  // NOTICE YOU HAVE REVERSED THE SIGN ON PURPOSE
-	else sign = -1;  //NOTICE YOU HAVE REVERSED THE SIGN ON PURPOSE
+	if (rotation == "clockwise")
+		sign = +1; // NOTICE YOU HAVE REVERSED THE SIGN ON PURPOSE
+	else sign = -1; //NOTICE YOU HAVE REVERSED THE SIGN ON PURPOSE
 
 	for (var i = 1; i < circlePoints + 1; i++) {
-		deg.push(deg[i - 1] + sign * 2 * Math.PI / (circlePoints + 1));
+		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
 		dx = radius * Math.cos(deg[i]);
 		dy = radius * Math.sin(deg[i]);
 		delta_lat = dy / 110540;
-		delta_lng = dx / (111320 * Math.cos(center.lat * Math.PI / 180));
+		delta_lng = dx / (111320 * Math.cos((center.lat * Math.PI) / 180));
 		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
 		rlpCount++;
 	}
 
-	return rlPoints;;
+	return rlPoints;
 }
 
 //..................................................................................
 function LatLngDist(lat1, lon1, lat2, lon2) {
 	//Check the distance between these points -- returns a value in km.
 	var R = 6371; // km
-	var dLat = (lat2 - lat1) * Math.PI / 180;
-	var dLon = (lon2 - lon1) * Math.PI / 180;
-	var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-		Math.sin(dLon / 2) * Math.sin(dLon / 2);
+	var dLat = ((lat2 - lat1) * Math.PI) / 180;
+	var dLon = ((lon2 - lon1) * Math.PI) / 180;
+	var a =
+		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos((lat1 * Math.PI) / 180) *
+			Math.cos((lat2 * Math.PI) / 180) *
+			Math.sin(dLon / 2) *
+			Math.sin(dLon / 2);
 	var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 	var d = R * c;
 	//log("The separation between these points is " + d);
@@ -616,18 +719,16 @@ function LatLngDist(lat1, lon1, lat2, lon2) {
 async function cleanTails(req, res, next) {
 	var method = req.method;
 	var url = req.url;
-	if (method.toLowerCase() == 'get') {
-	}
-
-	else if (method.toLowerCase() == 'post') {
-
+	if (method.toLowerCase() == "get") {
+	} else if (method.toLowerCase() == "post") {
 		var body = req.body;
 		var routeLatLng = body.LLs;
 		//console.log(routeLatLng);
 
 		//alert("Calling cleanTails!!!!");
 		var pLpoints = [];
-		for (var i = 0; i < routeLatLng.length; i++) pLpoints.push({ lat: routeLatLng[i].lat, lng: routeLatLng[i].lng });
+		for (var i = 0; i < routeLatLng.length; i++)
+			pLpoints.push({ lat: routeLatLng[i].lat, lng: routeLatLng[i].lng });
 
 		var pLdist = [];
 		pLdist.push(0);
@@ -636,7 +737,12 @@ async function cleanTails(req, res, next) {
 		var pLuse = [];
 		for (var i = 0; i < pLpoints.length - 1; i++) {
 			pLuse.push(false);
-			cumulative += LatLngDist(pLpoints[i].lat, pLpoints[i].lng, pLpoints[i + 1].lat, pLpoints[i + 1].lng);
+			cumulative += LatLngDist(
+				pLpoints[i].lat,
+				pLpoints[i].lng,
+				pLpoints[i + 1].lat,
+				pLpoints[i + 1].lng,
+			);
 			pLdist.push(cumulative);
 			newPath.push(pLpoints[i]);
 		}
@@ -654,14 +760,13 @@ async function cleanTails(req, res, next) {
 			for (var j = i + 1; j < pLpoints.length; j++) {
 				var thatOne = pLpoints[j];
 				dist = LatLngDist(thisOne.lat, thisOne.lng, thatOne.lat, thatOne.lng);
-				if (j == i + 1) //initialize
-				{
+				if (j == i + 1) {
+					//initialize
 					closest = dist;
 					point = j;
-				}
-				else {
-					if (dist < closest) //store this point
-					{
+				} else {
+					if (dist < closest) {
+						//store this point
 						closest = dist;
 						point = j;
 					}
@@ -674,8 +779,8 @@ async function cleanTails(req, res, next) {
 		var tailSize;
 		for (var i = 0; i < pLpoints.length; i++) {
 			pLuse[i] = true;
-			if (pLclose[i] - i != 1) //indicates a potential tail
-			{
+			if (pLclose[i] - i != 1) {
+				//indicates a potential tail
 				tailSize = (pLdist[pLclose[i]] - pLdist[i]) / cumulative;
 				if (tailSize < 0.2) {
 					i = pLclose[i]; //Jump ahead, over this tail.
@@ -692,7 +797,13 @@ async function cleanTails(req, res, next) {
 		var cleanedUp = pLpoints.length - newPath.length;
 
 		var finalDistance = 0;
-		for (var i = 1; i < newPath.length; i++) finalDistance += LatLngDist(newPath[i - 1].lat, newPath[i - 1].lng, newPath[i].lat, newPath[i].lng);
+		for (var i = 1; i < newPath.length; i++)
+			finalDistance += LatLngDist(
+				newPath[i - 1].lat,
+				newPath[i - 1].lng,
+				newPath[i].lat,
+				newPath[i].lng,
+			);
 
 		res.json({ newPath: newPath, cleanedUp: cleanedUp, distKm: finalDistance });
 	}
@@ -702,18 +813,20 @@ async function cleanTails(req, res, next) {
 function modifyDirections(req, res, next) {
 	var method = req.method;
 	var url = req.url;
-	if (method.toLowerCase() == 'get') {
-	}
-
-	else if (method.toLowerCase() == 'post') {
-
+	if (method.toLowerCase() == "get") {
+	} else if (method.toLowerCase() == "post") {
 		var body = req.body;
 		var allPoints = body.allPoints;
 
 		var cumulativeDistance = 0;
 		allPoints[0].cumulativeDistanceKm = 0;
 		for (var a = 1; a < allPoints.length; a++) {
-			cumulativeDistance += LatLngDist(allPoints[a - 1].lat, allPoints[a - 1].lng, allPoints[a].lat, allPoints[a].lng);
+			cumulativeDistance += LatLngDist(
+				allPoints[a - 1].lat,
+				allPoints[a - 1].lng,
+				allPoints[a].lat,
+				allPoints[a].lng,
+			);
 			allPoints[a].cumulativeDistanceKm = cumulativeDistance;
 		}
 		//Get distance to next instruction
@@ -721,7 +834,12 @@ function modifyDirections(req, res, next) {
 			if (!allPoints[a].hasOwnProperty("instructions")) continue;
 			var distanceToNext = 0;
 			for (var b = a + 1; b < allPoints.length; b++) {
-				distanceToNext += LatLngDist(allPoints[b - 1].lat, allPoints[b - 1].lng, allPoints[b].lat, allPoints[b].lng);
+				distanceToNext += LatLngDist(
+					allPoints[b - 1].lat,
+					allPoints[b - 1].lng,
+					allPoints[b].lat,
+					allPoints[b].lng,
+				);
 				if (allPoints[b].hasOwnProperty("instructions")) break;
 			}
 			allPoints[a].distanceToNextKm = distanceToNext;
@@ -731,20 +849,19 @@ function modifyDirections(req, res, next) {
 
 		var totalDistanceKm = cumulativeDistance;
 
-		res.json({ modifiedAllPoints: allPoints, totalDistanceKm: totalDistanceKm });
+		res.json({
+			modifiedAllPoints: allPoints,
+			totalDistanceKm: totalDistanceKm,
+		});
 	}
-
 }
 
 //..............................................................
 function showDirections(req, res, next) {
 	var method = req.method;
 	var url = req.url;
-	if (method.toLowerCase() == 'get') {
-	}
-
-	else if (method.toLowerCase() == 'post') {
-
+	if (method.toLowerCase() == "get") {
+	} else if (method.toLowerCase() == "post") {
 		var body = req.body;
 		/*
 		var directions = body.directions;
@@ -777,15 +894,23 @@ function showDirections(req, res, next) {
 		if (allPoints.length <= 0) {
 			status = "NG";
 			theHTML = `< h1 > No points brought in for directions display.</h1 > `;
-		}
-		else {
+		} else {
 			var currentTime = new Date();
 			var year = currentTime.getFullYear();
 			var month = currentTime.getMonth() + 1;
 			var day = currentTime.getDate();
 			var hour = currentTime.getHours();
 			var minute = currentTime.getMinutes();
-			var name = "RL-" + year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2) + "-" + padZeros(hour, 2) + padZeros(minute, 2);
+			var name =
+				"RL-" +
+				year +
+				"-" +
+				padZeros(month, 2) +
+				"-" +
+				padZeros(day, 2) +
+				"-" +
+				padZeros(hour, 2) +
+				padZeros(minute, 2);
 			var ymd = year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2);
 
 			theHTML = "";
@@ -809,7 +934,8 @@ function showDirections(req, res, next) {
 			theHTML += `} `;
 			theHTML += `</style > `;
 
-			var totalDistanceKm = allPoints[allPoints.length - 1].cumulativeDistanceKm;
+			var totalDistanceKm =
+				allPoints[allPoints.length - 1].cumulativeDistanceKm;
 			var totalDistance = showDist(totalDistanceKm, units);
 			var duration = totalDistance / speed;
 			theHTML += `${totalDistance.toFixed(1)} ${displayUnits} & nbsp;& nbsp; about & nbsp;& nbsp; ${convertHoursToHMS(duration)} at ${speed} ${displayUnits} /hour.</br > `;
@@ -832,18 +958,14 @@ function showDirections(req, res, next) {
 
 		res.json({ status: status, html: theHTML, name: name });
 	}
-
 }
 
 //..............................................................
 function makeSparseGPX(req, res, next) {
 	var method = req.method;
 	var url = req.url;
-	if (method.toLowerCase() == 'get') {
-	}
-
-	else if (method.toLowerCase() == 'post') {
-
+	if (method.toLowerCase() == "get") {
+	} else if (method.toLowerCase() == "post") {
 		var body = req.body;
 
 		var allPoints = body.allPoints;
@@ -855,36 +977,45 @@ function makeSparseGPX(req, res, next) {
 		var day = currentTime.getDate();
 		var hour = currentTime.getHours();
 		var minute = currentTime.getMinutes();
-		var name = "RL-" + year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2) + "-" + padZeros(hour, 2) + padZeros(minute, 2);
+		var name =
+			"RL-" +
+			year +
+			"-" +
+			padZeros(month, 2) +
+			"-" +
+			padZeros(day, 2) +
+			"-" +
+			padZeros(hour, 2) +
+			padZeros(minute, 2);
 		var ymd = year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2);
 		var OutText = "";
 
-		OutText += "<?xml version=\"1.0\"?>";
+		OutText += '<?xml version="1.0"?>';
 		OutText += "\n";
 
 		//OutText+= "<!--\n";
 		//OutText+= storeURL();
 		//OutText+= "\n-->\n";
 
-		OutText += "<gpx version=\"1.0\" creator=\"ExpertGPS 1.1 - http://www.topografix.com\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.topografix.com/GPX/1/0\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd\">\n";
+		OutText +=
+			'<gpx version="1.0" creator="ExpertGPS 1.1 - http://www.topografix.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.topografix.com/GPX/1/0" xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd">\n';
 
 		OutText += "<rte>\n";
 		for (var i = 0; i < allPoints.length; i++) {
 			if (i == 0) {
 				var Lat = allPoints[i].lat;
 				var Lng = allPoints[i].lng;
-				OutText += "   <rtept lat=\"" + Lat + "\" lon=\"" + Lng + "\">\n";
+				OutText += '   <rtept lat="' + Lat + '" lon="' + Lng + '">\n';
 				OutText += "   <name> p" + 0 + "</name>\n";
 				OutText += "   <desc><![CDATA[Start]]></desc>\n";
 				OutText += "   </rtept>\n";
-			}
-			else {
+			} else {
 				if (!allPoints[i].hasOwnProperty("instructions")) continue;
 				var Lat = allPoints[i].lat;
 				var Lng = allPoints[i].lng;
 				var instruction = cleanUp(allPoints[i].instructions);
 				var point = i + 1;
-				OutText += "   <rtept lat=\"" + Lat + "\" lon=\"" + Lng + "\">\n";
+				OutText += '   <rtept lat="' + Lat + '" lon="' + Lng + '">\n';
 				OutText += "   <name> p" + point + "</name>\n";
 				OutText += "   <desc><![CDATA[" + instruction + "]]></desc>\n";
 				OutText += "   </rtept>\n";
@@ -901,11 +1032,8 @@ function makeSparseGPX(req, res, next) {
 function makeDenseGPX(req, res, next) {
 	var method = req.method;
 	var url = req.url;
-	if (method.toLowerCase() == 'get') {
-	}
-
-	else if (method.toLowerCase() == 'post') {
-
+	if (method.toLowerCase() == "get") {
+	} else if (method.toLowerCase() == "post") {
 		var body = req.body;
 		var units = body.units;
 		var speed = body.speed;
@@ -914,7 +1042,7 @@ function makeDenseGPX(req, res, next) {
 		var displayUnits = "kilometers";
 		if (units == "imperial") displayUnits = "miles";
 		var speedKph = speed;
-		if (units == "imperial") speedKph = speed * 5280 * 12 * 2.54 / 100 / 1000;
+		if (units == "imperial") speedKph = (speed * 5280 * 12 * 2.54) / 100 / 1000;
 
 		var allPoints = body.allPoints;
 		var status = "OK";
@@ -922,7 +1050,7 @@ function makeDenseGPX(req, res, next) {
 		//Update allPoints with times.
 		var lastTime = null;
 		for (var point of allPoints) {
-			Time = point.cumulativeDistanceKm / speedKph * 60 * 60;
+			Time = (point.cumulativeDistanceKm / speedKph) * 60 * 60;
 			Time = Math.round(Time); //Get rid of fractional seconds because they can lead to odd times, like 3 minutes and 60 seconds.
 			if (Time == lastTime) Time += 1;
 			point.time = Time;
@@ -935,15 +1063,25 @@ function makeDenseGPX(req, res, next) {
 		var day = currentTime.getDate();
 		var hour = currentTime.getHours();
 		var minute = currentTime.getMinutes();
-		var name = "RL-" + year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2) + "-" + padZeros(hour, 2) + padZeros(minute, 2);
+		var name =
+			"RL-" +
+			year +
+			"-" +
+			padZeros(month, 2) +
+			"-" +
+			padZeros(day, 2) +
+			"-" +
+			padZeros(hour, 2) +
+			padZeros(minute, 2);
 		var ymd = year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2);
 		var OutText = "";
 
-		OutText += "<?xml version=\"1.0\"?>\n";
+		OutText += '<?xml version="1.0"?>\n';
 		//OutText += "<!--\n";
 		//OutText += storeURL() + "\n";
 		//OutText += "-->\n";
-		OutText += "<gpx version=\"1.0\" creator=\"ExpertGPS 1.1 - http://www.topografix.com\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.topografix.com/GPX/1/0\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd\">\n";
+		OutText +=
+			'<gpx version="1.0" creator="ExpertGPS 1.1 - http://www.topografix.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.topografix.com/GPX/1/0" xsi:schemaLocation="http://www.topografix.com/GPX/1/0 http://www.topografix.com/GPX/1/0/gpx.xsd">\n';
 
 		OutText += "<trk>\n";
 		OutText += "  <trkseg>\n";
@@ -951,10 +1089,19 @@ function makeDenseGPX(req, res, next) {
 		for (var i = 0; i < allPoints.length; i++) {
 			var Lat = allPoints[i].lat;
 			var Lng = allPoints[i].lng;
-			OutText += "    <trkpt lat=\"" + Lat + "\" lon=\"" + Lng + "\">\n";
+			OutText += '    <trkpt lat="' + Lat + '" lon="' + Lng + '">\n';
 			OutText += "    <name> p" + i + " </name>\n";
 			var Time = allPoints[i].time;
-			OutText += "    <time>" + ymd + "T" + padZeros(hours(Time).toFixed(0), 2) + ":" + padZeros(minutes(Time).toFixed(0), 2) + ":" + padZeros(seconds(Time).toFixed(0), 2) + "Z</time>\n";
+			OutText +=
+				"    <time>" +
+				ymd +
+				"T" +
+				padZeros(hours(Time).toFixed(0), 2) +
+				":" +
+				padZeros(minutes(Time).toFixed(0), 2) +
+				":" +
+				padZeros(seconds(Time).toFixed(0), 2) +
+				"Z</time>\n";
 			OutText += "    </trkpt>\n";
 		}
 		OutText += "  </trkseg>\n";
@@ -968,11 +1115,8 @@ function makeDenseGPX(req, res, next) {
 function makeTCX(req, res, next) {
 	var method = req.method;
 	var url = req.url;
-	if (method.toLowerCase() == 'get') {
-	}
-
-	else if (method.toLowerCase() == 'post') {
-
+	if (method.toLowerCase() == "get") {
+	} else if (method.toLowerCase() == "post") {
 		var body = req.body;
 		var units = body.units;
 		var speed = body.speed;
@@ -983,9 +1127,9 @@ function makeTCX(req, res, next) {
 		var displayUnits = "kilometers";
 		if (units == "imperial") displayUnits = "miles";
 		var speedKph = speed;
-		if (units == "imperial") speedKph = speed * 5280 * 12 * 2.54 / 100 / 1000;
+		if (units == "imperial") speedKph = (speed * 5280 * 12 * 2.54) / 100 / 1000;
 		var advanceMeters = advance;
-		if (units == "imperial") advanceMeters = advance * 12 * 2.54 / 100;
+		if (units == "imperial") advanceMeters = (advance * 12 * 2.54) / 100;
 
 		var allPoints = body.allPoints;
 		var status = "OK";
@@ -993,7 +1137,7 @@ function makeTCX(req, res, next) {
 		//Update allPoints with times.
 		var lastTime = null;
 		for (var point of allPoints) {
-			Time = point.cumulativeDistanceKm / speedKph * 60 * 60;
+			Time = (point.cumulativeDistanceKm / speedKph) * 60 * 60;
 			Time = Math.round(Time); //Get rid of fractional seconds because they can lead to odd times, like 3 minutes and 60 seconds.
 			if (Time == lastTime) Time += 1;
 			point.time = Time;
@@ -1006,7 +1150,8 @@ function makeTCX(req, res, next) {
 			var atDistance = point.cumulativeDistanceKm;
 			var advancedDistance = atDistance - advanceMeters / 1000;
 			var result = findPointAtDistance(allPoints, advancedDistance);
-			if (result.atPoint != null) allPoints[result.atPoint].advancedInstructions = point.instructions;
+			if (result.atPoint != null)
+				allPoints[result.atPoint].advancedInstructions = point.instructions;
 		}
 
 		var currentTime = new Date();
@@ -1016,12 +1161,22 @@ function makeTCX(req, res, next) {
 		var hour = currentTime.getHours();
 		var minute = currentTime.getMinutes();
 		if (name.length == 0)
-			name = "RL-" + year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2) + "-" + padZeros(hour, 2) + padZeros(minute, 2);
+			name =
+				"RL-" +
+				year +
+				"-" +
+				padZeros(month, 2) +
+				"-" +
+				padZeros(day, 2) +
+				"-" +
+				padZeros(hour, 2) +
+				padZeros(minute, 2);
 		var ymd = year + "-" + padZeros(month, 2) + "-" + padZeros(day, 2);
 		var OutText = "";
 
-		OutText += "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\n";
-		OutText += "<TrainingCenterDatabase xmlns=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd\">\n";
+		OutText += '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n';
+		OutText +=
+			'<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd">\n';
 		OutText += "<Courses>\n";
 		OutText += "  <Course>\n";
 		OutText += "  <Name>" + name + "</Name>\n";
@@ -1038,23 +1193,31 @@ function makeTCX(req, res, next) {
 			var Dist = allPoints[i].cumulativeDistanceKm;
 			var Time = allPoints[i].time;
 			OutText += "      </Position>\n";
-			OutText += "      <DistanceMeters>" + (Dist * 1000).toFixed(0) + "</DistanceMeters>\n";
-			OutText += "      <Time>" + ymd + "T" + padZeros(hours(Time).toFixed(0), 2)
-				+ ":" + padZeros(minutes(Time).toFixed(0), 2)
-				+ ":" + padZeros(seconds(Time).toFixed(0), 2)
-				+ "Z</Time>\n";
+			OutText +=
+				"      <DistanceMeters>" +
+				(Dist * 1000).toFixed(0) +
+				"</DistanceMeters>\n";
+			OutText +=
+				"      <Time>" +
+				ymd +
+				"T" +
+				padZeros(hours(Time).toFixed(0), 2) +
+				":" +
+				padZeros(minutes(Time).toFixed(0), 2) +
+				":" +
+				padZeros(seconds(Time).toFixed(0), 2) +
+				"Z</Time>\n";
 			OutText += "    </Trackpoint>\n";
 		}
 		OutText += "  </Track>\n";
-
-
 
 		//Write out all of the Course Points
 		for (var i = 0; i < allPoints.length; i++) {
 			if (!allPoints[i].hasOwnProperty("advancedInstructions")) continue;
 
 			var instruct = allPoints[i].advancedInstructions;
-			if (instruct[instruct.length - 1] == "*") instruct = instruct.slice(0, -1);
+			if (instruct[instruct.length - 1] == "*")
+				instruct = instruct.slice(0, -1);
 			//Figure out the direction
 			{
 				var type = "Generic";
@@ -1064,16 +1227,15 @@ function makeTCX(req, res, next) {
 			}
 			// Figure out the road
 			{
-				var point = null, road = "";
+				var point = null,
+					road = "";
 				if (instruct.indexOf(" at ") >= 0) {
 					point = instruct.indexOf(" at ");
 					road = instruct.substring(point + 3);
-				}
-				else if (instruct.indexOf(" onto ") >= 0) {
+				} else if (instruct.indexOf(" onto ") >= 0) {
 					point = instruct.indexOf(" onto ");
 					road = instruct.substring(point + 5);
-				}
-				else if (instruct.indexOf(" on ") >= 0) {
+				} else if (instruct.indexOf(" on ") >= 0) {
 					point = instruct.indexOf(" on ");
 					road = instruct.substring(point + 3);
 				}
@@ -1085,8 +1247,16 @@ function makeTCX(req, res, next) {
 			OutText += "  <CoursePoint>\n";
 			var roadOut = cleanUp(road);
 			OutText += "    <Name>" + roadOut + "</Name>\n";
-			OutText += "    <Time>" + ymd + "T" + padZeros(hours(Time).toFixed(0), 2)
-				+ ":" + padZeros(minutes(Time).toFixed(0), 2) + ":" + padZeros(seconds(Time).toFixed(0), 2) + "Z</Time>\n";
+			OutText +=
+				"    <Time>" +
+				ymd +
+				"T" +
+				padZeros(hours(Time).toFixed(0), 2) +
+				":" +
+				padZeros(minutes(Time).toFixed(0), 2) +
+				":" +
+				padZeros(seconds(Time).toFixed(0), 2) +
+				"Z</Time>\n";
 			OutText += "    <Position>\n";
 			OutText += "      <LatitudeDegrees>" + Lat + "</LatitudeDegrees>\n";
 			OutText += "      <LongitudeDegrees>" + Lng + "</LongitudeDegrees>\n";
@@ -1107,12 +1277,13 @@ function makeTCX(req, res, next) {
 
 //..................................................................
 function findPointAtDistance(allPoints, distanceKm) {
-
 	var result = { atPoint: null, withSeparation: null };
 	for (var a = 0; a < allPoints.length; a++) {
 		var separation = Math.abs(allPoints[a].cumulativeDistanceKm - distanceKm);
-		if (result.atPoint == null) result = { atPoint: a, withSeparation: separation };
-		if (separation < result.withSeparation) result = { atPoint: a, withSeparation: separation };
+		if (result.atPoint == null)
+			result = { atPoint: a, withSeparation: separation };
+		if (separation < result.withSeparation)
+			result = { atPoint: a, withSeparation: separation };
 	}
 
 	return result;
@@ -1123,7 +1294,7 @@ function padZeros(theNumber, max) {
 	var numStr = String(theNumber);
 
 	while (numStr.length < max) {
-		numStr = '0' + numStr;
+		numStr = "0" + numStr;
 	}
 
 	return numStr;
@@ -1136,7 +1307,7 @@ function convertHoursToHMS(hours) {
 	const mins = Math.floor(remainingSeconds / 60);
 	const secs = remainingSeconds % 60;
 
-	return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')} `;
+	return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")} `;
 }
 //...............................................................
 function hours(secs) {
@@ -1153,7 +1324,7 @@ function seconds(secs) {
 //..................................................................
 function showDist(km, units) {
 	var showAs = km;
-	if (units == "imperial") showAs = km * 1000 * 100 / 2.54 / 12 / 5280;
+	if (units == "imperial") showAs = (km * 1000 * 100) / 2.54 / 12 / 5280;
 	if (units == "metric") showAs = km;
 	return showAs;
 }
@@ -1185,4 +1356,3 @@ function cleanUp(text) {
 
 	return cleaned;
 }
-
