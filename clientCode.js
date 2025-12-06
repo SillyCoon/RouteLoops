@@ -153,8 +153,7 @@ const getDirections = async (initialWaypoints) => {
 	return await theResp.json();
 };
 
-//........................................................................................
-async function doRL(waypointsIn) {
+const cleanMap = () => {
 	//Clear any paths on the map if there are any.
 	try {
 		map.removeLayer(rlPath);
@@ -168,7 +167,11 @@ async function doRL(waypointsIn) {
 	try {
 		homeMarker.remove();
 	} catch {}
+};
 
+//........................................................................................
+async function doRL(waypointsIn) {
+	cleanMap();
 	const initialWaypoints = waypointsIn ?? (await getRLpoints());
 	drawGuidePoints(initialWaypoints, waypointsIn);
 
@@ -178,18 +181,7 @@ async function doRL(waypointsIn) {
 		alert(
 			`The routing server has returned an error.  Try again with a slightly shorter route.  The error returned was "${theJson.error}"`,
 		);
-		try {
-			map.removeLayer(rlPath);
-		} catch {}
-		try {
-			map.removeLayer(rawPath);
-		} catch {}
-		try {
-			map.removeLayer(guidepointPath);
-		} catch {}
-		try {
-			homeMarker.remove();
-		} catch {}
+		cleanMap();
 		return;
 	} else {
 		allPoints = theJson.features[0].allPoints;
