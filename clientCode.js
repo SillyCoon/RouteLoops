@@ -111,6 +111,29 @@ const getRLpoints = async () => {
 	return initialWaypoints;
 };
 
+const drawGuidePoints = (waypoints, waypointsIn) => {
+	//Add the starting location as both the first, and the last, guide point.
+	const guidePoints = [];
+	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
+	for (const waypoint of waypoints)
+		guidePoints.push(new L.LatLng(waypoint.lat, waypoint.lng));
+	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
+
+	//Draw these guide points on the map.
+
+	guidepointPath = new L.Polyline(guidePoints, {
+		color: "blue",
+		weight: 2,
+		opacity: 1.0,
+		smoothFactor: 1,
+	});
+	guidepointPath.addTo(map);
+
+	//Get a bounding box used to zoom the map to a more reasonable size.
+	const RLBounds = guidepointPath.getBounds();
+	if (!waypointsIn) map.fitBounds(RLBounds);
+};
+
 const getDirections = async (initialWaypoints) => {
 	//Call the directions service using the guide point as waypoints.
 	const theMode = document.getElementById("inputMode").value;
@@ -148,30 +171,11 @@ async function doRL(waypointsIn) {
 	} catch {}
 
 	const initialWaypoints = waypointsIn ?? (await getRLpoints());
-	//Add the starting location as both the first, and the last, guide point.
-	const guidePoints = [];
-	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
-	for (const waypoint of initialWaypoints)
-		guidePoints.push(new L.LatLng(waypoint.lat, waypoint.lng));
-	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
-
-	//Draw these guide points on the map.
-
-	guidepointPath = new L.Polyline(guidePoints, {
-		color: "blue",
-		weight: 2,
-		opacity: 1.0,
-		smoothFactor: 1,
-	});
-	guidepointPath.addTo(map);
-
-	//Get a bounding box used to zoom the map to a more reasonable size.
-	const RLBounds = guidepointPath.getBounds();
-	if (!waypointsIn) map.fitBounds(RLBounds);
+	drawGuidePoints(initialWaypoints, waypointsIn);
 
 	const theJson = await getDirections(initialWaypoints);
 
-	if (theJson.hasOwnProperty("error")) {
+	if (error in theJson) {
 		alert(
 			`The routing server has returned an error.  Try again with a slightly shorter route.  The error returned was "${theJson.error}"`,
 		);
