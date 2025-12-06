@@ -473,7 +473,7 @@ async function generateOutput() {
 		paceDefault = 16;
 		if (mode === "walking") {
 			pace = "minutes-per-mile";
-			packetDefault = 10; //min per mile
+			paceDefault = 10; //min per mile
 		}
 	}
 
