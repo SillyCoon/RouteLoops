@@ -452,6 +452,25 @@ async function doRL(waypointsIn) {
 	}
 }
 
+const fetchFromServer = async (path, data) => {
+	const ApiHeaders = {
+		Accept: "application/json",
+		"Content-Type": "application/json",
+	};
+	const theResp = await fetch(`${protocol}//${hostname}:${port}/${path}`, {
+		method: "POST",
+		body: JSON.stringify(data),
+		headers: ApiHeaders,
+	});
+	return theResp.json();
+};
+
+const promptForSpeed = (mode, paceDefault, pace) => {
+	let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
+	if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
+	return speed;
+};
+
 //......................................................................................................
 async function generateOutput() {
 	const theType = document.getElementById("createOutput").value;
@@ -478,77 +497,47 @@ async function generateOutput() {
 	}
 
 	let theJson;
-
-	const ApiHeaders = {
-		Accept: "application/json",
-		"Content-Type": "application/json",
-	};
-
 	let doPrint = false;
 	let doShow = false;
 
 	if (theType === "directions") {
-		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
-		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
-		const data = { allPoints: allPoints, units: units, speed: speed };
-		const url = `${protocol}//${hostname}:${port}/showDirections`;
-		const theResp = await fetch(url, {
-			method: "POST",
-			body: JSON.stringify(data),
-			headers: ApiHeaders,
+		theJson = await fetchFromServer("showDirections", {
+			allPoints: allPoints,
+			units: units,
+			speed: promptForSpeed(mode, paceDefault, pace),
 		});
-		theJson = await theResp.json();
 		doPrint = confirm("Print it?");
 		doShow = true;
 	}
 
 	if (theType === "sparseGPX") {
-		const data = { allPoints: allPoints };
-		const url = `${protocol}//${hostname}:${port}/makeSparseGPX`;
-		const theResp = await fetch(url, {
-			method: "POST",
-			body: JSON.stringify(data),
-			headers: ApiHeaders,
-		});
-		theJson = await theResp.json();
+		theJson = await fetchFromServer("makeSparseGPX", { allPoints: allPoints });
 		doPrint = true;
 	}
 
 	if (theType === "denseGPX") {
-		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
-		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
-		const data = { allPoints: allPoints, units: units, speed: speed };
-		const url = `${protocol}//${hostname}:${port}/makeDenseGPX`;
-		const theResp = await fetch(url, {
-			method: "POST",
-			body: JSON.stringify(data),
-			headers: ApiHeaders,
+		theJson = await fetchFromServer("makeDenseGPX", {
+			allPoints: allPoints,
+			units: units,
+			speed: promptForSpeed(mode, paceDefault, pace),
 		});
-		theJson = await theResp.json();
 		doPrint = true;
 	}
 
 	if (theType === "tcx") {
-		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
-		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
+		const speed = promptForSpeed(mode, paceDefault, pace);
 		const advance = prompt(
 			`Set turn warnings this many ${advanceUnits} in advance.`,
 			300,
 		);
-		const data = {
+
+		theJson = await fetchFromServer("makeTCX", {
 			allPoints: allPoints,
 			units: units,
 			speed: speed,
 			advance: advance,
 			name: routeName,
-		};
-		const url = `${protocol}//${hostname}:${port}/makeTCX`;
-		const theResp = await fetch(url, {
-			method: "POST",
-			body: JSON.stringify(data),
-			headers: ApiHeaders,
 		});
-		theJson = await theResp.json();
 		doPrint = true;
 	}
 
@@ -581,15 +570,15 @@ async function generateOutput() {
 	if (theJson.status === "OK") {
 		let theInfo = "";
 		let theType = "";
-		if (theJson.hasOwnProperty("html")) {
+		if ("html" in theJson) {
 			theInfo = theJson.html;
 			theType = "html";
 		}
-		if (theJson.hasOwnProperty("gpx")) {
+		if ("gpx" in theJson) {
 			theInfo = theJson.gpx;
 			theType = "gpx";
 		}
-		if (theJson.hasOwnProperty("tcx")) {
+		if ("tcx" in theJson) {
 			theInfo = theJson.tcx;
 			theType = "tcx";
 		}
@@ -637,15 +626,15 @@ function saveConfiguration() {
 	theConfiguration.inputFerries = avoidFerries;
 	theConfiguration.currentWaypoints = currentWaypoints;
 
-	var theLink = "";
+	let theLink = "";
 	theLink = `${protocol}//${hostname}:${port}/index.html`;
 	theLink += "?routeLink=true";
 	for (const item in theConfiguration) {
-		if (item != "currentWaypoints")
+		if (item !== "currentWaypoints")
 			theLink += `&${item}=${theConfiguration[item]}`;
 	}
 	if (currentWaypoints.length > 0) {
-		var text = "";
+		let text = "";
 		for (const waypoint of currentWaypoints)
 			text += `${waypoint.lat},${waypoint.lng}|`;
 		text = text.slice(0, -1);
@@ -658,7 +647,6 @@ function saveConfiguration() {
 	if (newWindow) {
 		newWindow.document.open();
 		newWindow.document.write(theLink);
-		//newWindow.document.close();
 	} else {
 		alert("Popup blocked! Please allow popups for this site.");
 	}
@@ -675,7 +663,7 @@ function useRouteLink() {
 	if (urlParams.has("inputUnits"))
 		document.getElementById("inputUnits").value = urlParams.get("inputUnits");
 	if (urlParams.has("inputMode")) {
-		var useMode = "cycling-road";
+		let useMode = "cycling-road";
 		if (urlParams.get("inputMode").toLowerCase().indexOf("driv") >= 0)
 			useMode = "driving-car";
 		if (urlParams.get("inputMode").toLowerCase().indexOf("walk") >= 0)
@@ -697,13 +685,13 @@ function useRouteLink() {
 	if (urlParams.has("inputHighways"))
 		document.getElementById("inputHighways").value =
 			urlParams.get("inputHighways");
-	var waypoints = [];
-	var pts = [];
+	const waypoints = [];
+	let pts = [];
 	if (urlParams.has("waypoints")) {
 		pts = urlParams.get("waypoints");
 		pts = pts.split("|");
-		for (item of pts) {
-			var pair = item.split(",");
+		for (const item of pts) {
+			const pair = item.split(",");
 			waypoints.push({ lat: pair[0], lng: pair[1] });
 		}
 	}
