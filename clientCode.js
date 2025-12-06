@@ -609,22 +609,21 @@ async function generateOutput() {
 
 //............................................................
 function saveConfiguration() {
-	theConfiguration = {};
-	theConfiguration.inputLocation = homeLocation;
-	theConfiguration.inputDist = document.getElementById("inputDist").value;
-	theConfiguration.inputUnits = document.getElementById("inputUnits").value;
-	theConfiguration.inputMode = document.getElementById("inputMode").value;
-	theConfiguration.fitnessLevel = document.getElementById("fitnessLevel").value;
-	theConfiguration.greenFactor = document.getElementById("greenFactor").value;
-	theConfiguration.quietFactor = document.getElementById("quietFactor").value;
-	theConfiguration.inputRotation =
-		document.getElementById("inputRotation").value;
-	theConfiguration.inputDirection = direction;
-	theConfiguration.method = method;
-	theConfiguration.inputHighways =
-		document.getElementById("inputHighways").value;
-	theConfiguration.inputFerries = avoidFerries;
-	theConfiguration.currentWaypoints = currentWaypoints;
+	const theConfiguration = {
+		inputLocation: homeLocation,
+		inputDist: document.getElementById("inputDist").value,
+		inputUnits: document.getElementById("inputUnits").value,
+		inputMode: document.getElementById("inputMode").value,
+		fitnessLevel: document.getElementById("fitnessLevel").value,
+		greenFactor: document.getElementById("greenFactor").value,
+		quietFactor: document.getElementById("quietFactor").value,
+		inputRotation: document.getElementById("inputRotation").value,
+		inputDirection: direction,
+		method: method,
+		inputHighways: document.getElementById("inputHighways").value,
+		inputFerries: avoidFerries,
+		currentWaypoints: currentWaypoints,
+	};
 
 	let theLink = "";
 	theLink = `${protocol}//${hostname}:${port}/index.html`;
