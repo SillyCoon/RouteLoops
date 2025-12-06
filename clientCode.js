@@ -195,7 +195,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 		hasRouteLink = false; //Reset this so that from now on it will perform the route cleaning
 	}
 	let countCalcs = 0;
-	const waypoints = [];
+	let waypoints = [];
 	for (const waypoint of initialWaypoints) waypoints.push(waypoint);
 	lastCounts = { cleaned: -1, total: -1 };
 	while (keepGoing) {
@@ -225,8 +225,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 				}
 				newWaypoints.push(closest.point);
 			}
-			waypoints.length = 0;
-			for (const waypoint of newWaypoints) waypoints.push(waypoint);
+			waypoints = newWaypoints;
 
 			const directionsJson = await getDirections(waypoints);
 			allPoints = directionsJson.features[0].allPoints;
