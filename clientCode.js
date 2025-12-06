@@ -69,28 +69,6 @@ function changeMode() {
 	window.open(url, "_self");
 	return;
 }
-//--------------------------------------
-function displayMarker(index) {
-	if (index < directionMarkers.length) {
-		var marker = directionMarkers[index];
-		marker.addTo(map);
-		index += 1;
-		if (index < directionMarkers.length)
-			setTimeout(() => {
-				displayMarker(index);
-			}, 200);
-	}
-	return;
-}
-//.......................................
-function showDirectionMarkers() {
-	if (document.getElementById("directionMarkers").checked) {
-		displayMarker(0);
-	} else {
-		for (const marker of directionMarkers) map.removeLayer(marker);
-	}
-	return;
-}
 
 //.........................................
 async function setAsHome(location) {
