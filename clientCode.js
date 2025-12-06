@@ -1,10 +1,9 @@
 import "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-import "https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js";
 //Include valid tokens for routers, if required.
 //Also, adjust the callback
 //Adjust all DoNotPush
 
-let map, RoutingControl;
+let map;
 let rlPath, rawPath, guidepointPath;
 let allPoints;
 let currentWaypoints = [];
@@ -43,113 +42,16 @@ async function initMap() {
 
 	map = L.map("map").setView([42.3, -71.3], 8);
 
-	map.on("click", function (event) {
+	map.on("click", (event) => {
 		setAsHome(event.latlng);
 		homeLocation = event.latlng;
 	});
 
-	const tiles = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+	L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 		maxZoom: 18,
 		attribution:
 			'&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
 	}).addTo(map);
-
-	var theMode = document.getElementById("inputMode").value;
-	const theRouter = "MapBox";
-	var routerToUse = null;
-	if (theRouter == "OSM")
-		routerToUse = new L.Routing.OSRMv1({ profile: `${theMode}` });
-	if (theRouter == "MapBox") {
-		var theToken = "A valid token";
-		var theProfile = "cycling";
-		if (theMode.indexOf("driving") >= 0) theProfile = "driving";
-		if (theMode.indexOf("cycling") >= 0) theProfile = "cycling";
-		if (theMode.indexOf("walking") >= 0) theProfile = "walking";
-		if (theMode.indexOf("foot") >= 0) theProfile = "walking";
-		//Change this to use the input from the query string
-		if (urlParams.has("mode")) {
-			var mode = urlParams.get("mode");
-			if (mode.indexOf("driv") >= 0) theProfile = "driving";
-			if (mode.indexOf("car") >= 0) theProfile = "driving";
-			if (mode.indexOf("cycl") >= 0) theProfile = "cycling";
-			if (mode.indexOf("bik") >= 0) theProfile = "cycling";
-			if (mode.indexOf("walk") >= 0) theProfile = "walking";
-			if (mode.indexOf("foot") >= 0) theProfile = "walking";
-			if (theProfile == "driving")
-				document.getElementById("inputMode").value = "driving-car";
-			if (theProfile == "cycling")
-				document.getElementById("inputMode").value = "cycling-road";
-			if (theProfile == "walking")
-				document.getElementById("inputMode").value = "foot-walking";
-		}
-		routerToUse = new L.Routing.mapbox(theToken, {
-			profile: `mapbox/${theProfile}`,
-		});
-	}
-	RoutingControl = L.Routing.control({
-		waypoints: [],
-		lineOptions: { styles: [{ color: "red", opacity: 1, weight: 3 }] },
-		router: routerToUse,
-	}).addTo(map);
-
-	RoutingControl.on("routesfound", async (response) => {
-		var theResponse = response;
-		allPoints = [];
-		for (const point of theResponse.routes[0].coordinates)
-			allPoints.push({ lat: point.lat, lng: point.lng });
-		for (const item of theResponse.routes[0].instructions)
-			allPoints[item.index].instructions = item.text;
-		//Based on the drag action, find the current set of waypoints.
-		var newWaypoints = [];
-		for (var i = 1; i < theResponse.waypoints.length - 1; i++) {
-			var thisWaypoint = theResponse.waypoints[i];
-			newWaypoints.push({
-				lat: thisWaypoint.latLng.lat,
-				lng: thisWaypoint.latLng.lng,
-			});
-		}
-		currentWaypoints.length = 0;
-		for (const waypoint of newWaypoints) currentWaypoints.push(waypoint);
-		var ApiHeaders = {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		};
-		var data = { allPoints: allPoints };
-		var url = `${protocol}//${hostname}:${port}/modifyDirections`;
-		var theResp = await fetch(url, {
-			method: "POST",
-			body: JSON.stringify(data),
-			headers: ApiHeaders,
-		});
-		var theJson = await theResp.json();
-		distDisplay = theJson.totalDistanceKm;
-		allPoints.length = 0;
-		for (const point of theJson.modifiedAllPoints) allPoints.push(point);
-		var units = document.getElementById("inputUnits").value;
-		if (units == "imperial")
-			distDisplay = (distDisplay * 1000 * 100) / 2.54 / 12 / 5280;
-		document.getElementById("outDist").innerHTML = distDisplay.toFixed(1);
-		try {
-			map.removeLayer(rlPath);
-		} catch (err) {}
-		//Set markers at the locations where you have directions.
-		for (const marker of directionMarkers) marker.map = null;
-		directionMarkers.length = 0;
-		var countInstructions = 0;
-		for (const point of allPoints) {
-			if (point.hasOwnProperty("instructions")) {
-				countInstructions += 1;
-				point.count = countInstructions;
-				var useInstruction = `${countInstructions}: ${point.instructions}`;
-				var marker = new L.Marker([point.lat, point.lng], {
-					title: useInstruction,
-				});
-				marker.addTo(map);
-				directionMarkers.push(marker);
-			}
-		}
-		showDirectionMarkers();
-	});
 
 	if (hasRouteLink) {
 		useRouteLink();
@@ -438,14 +340,6 @@ async function doRL(waypointsIn) {
 		}
 
 		currentWaypoints = JSON.parse(JSON.stringify(waypoints));
-
-		//This is a special section for OSM, to enable draggable routes.
-		var wpts = [];
-		wpts.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
-		for (const waypoint of waypoints)
-			wpts.push(new L.LatLng(waypoint.lat, waypoint.lng));
-		wpts.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
-		RoutingControl.setWaypoints(wpts);
 
 		return;
 	}
