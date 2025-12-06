@@ -8,12 +8,11 @@ let map, RoutingControl;
 let rlPath, rawPath, guidepointPath;
 let allPoints;
 let currentWaypoints = [];
-let directionMarkers = [];
+const directionMarkers = [];
 let homeMarker;
 const { protocol, hostname, port } = window.location;
 const urlParams = new URLSearchParams(window.location.search);
 let hasRouteLink = false;
-let theConfiguration = {};
 let lastCounts = { cleaned: -1, total: -1 };
 let newWaypoints = [];
 
