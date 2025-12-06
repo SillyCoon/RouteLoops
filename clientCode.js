@@ -455,7 +455,7 @@ async function doRL(waypointsIn) {
 //......................................................................................................
 async function generateOutput() {
 	var theType = document.getElementById("createOutput").value;
-	if (theType == "none") return;
+	if (theType === "none") return;
 
 	var routeName = document.getElementById("routeName").value.trim();
 	var units = document.getElementById("inputUnits").value;
@@ -463,33 +463,33 @@ async function generateOutput() {
 	var advanceUnits = "meters";
 	var pace = "kph";
 	var paceDefault = 25;
-	if (mode == "walking") {
+	if (mode === "walking") {
 		pace = "minutes-per-kilometer";
 		paceDefault = 6; //min per km
 	}
-	if (units == "imperial") {
+	if (units === "imperial") {
 		advanceUnits = "feet";
 		pace = "mph";
 		paceDefault = 16;
-		if (mode == "walking") {
+		if (mode === "walking") {
 			pace = "minutes-per-mile";
 			packetDefault = 10; //min per mile
 		}
 	}
 
-	var doPrint = false;
-	var doShow = false;
+	let doPrint = false;
+	let doShow = false;
 
-	if (theType == "directions") {
-		var speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
+	if (theType === "directions") {
+		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
 		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
-		var ApiHeaders = {
+		const ApiHeaders = {
 			Accept: "application/json",
 			"Content-Type": "application/json",
 		};
-		var data = { allPoints: allPoints, units: units, speed: speed };
-		var url = `${protocol}//${hostname}:${port}/showDirections`;
-		var theResp = await fetch(url, {
+		const data = { allPoints: allPoints, units: units, speed: speed };
+		const url = `${protocol}//${hostname}:${port}/showDirections`;
+		const theResp = await fetch(url, {
 			method: "POST",
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
@@ -499,14 +499,14 @@ async function generateOutput() {
 		doShow = true;
 	}
 
-	if (theType == "sparseGPX") {
-		var ApiHeaders = {
+	if (theType === "sparseGPX") {
+		const ApiHeaders = {
 			Accept: "application/json",
 			"Content-Type": "application/json",
 		};
-		var data = { allPoints: allPoints };
-		var url = `${protocol}//${hostname}:${port}/makeSparseGPX`;
-		var theResp = await fetch(url, {
+		const data = { allPoints: allPoints };
+		const url = `${protocol}//${hostname}:${port}/makeSparseGPX`;
+		const theResp = await fetch(url, {
 			method: "POST",
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
@@ -515,16 +515,16 @@ async function generateOutput() {
 		doPrint = true;
 	}
 
-	if (theType == "denseGPX") {
-		var ApiHeaders = {
+	if (theType === "denseGPX") {
+		const ApiHeaders = {
 			Accept: "application/json",
 			"Content-Type": "application/json",
 		};
-		var speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
+		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
 		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
-		var data = { allPoints: allPoints, units: units, speed: speed };
-		var url = `${protocol}//${hostname}:${port}/makeDenseGPX`;
-		var theResp = await fetch(url, {
+		const data = { allPoints: allPoints, units: units, speed: speed };
+		const url = `${protocol}//${hostname}:${port}/makeDenseGPX`;
+		const theResp = await fetch(url, {
 			method: "POST",
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
@@ -533,26 +533,26 @@ async function generateOutput() {
 		doPrint = true;
 	}
 
-	if (theType == "tcx") {
-		var ApiHeaders = {
+	if (theType === "tcx") {
+		const ApiHeaders = {
 			Accept: "application/json",
 			"Content-Type": "application/json",
 		};
-		var speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
+		let speed = prompt(`Your average ${mode} speed in ${pace}.`, paceDefault);
 		if (pace.indexOf("minutes-per") >= 0) speed = 60 / speed;
-		var advance = prompt(
+		const advance = prompt(
 			`Set turn warnings this many ${advanceUnits} in advance.`,
 			300,
 		);
-		var data = {
+		const data = {
 			allPoints: allPoints,
 			units: units,
 			speed: speed,
 			advance: advance,
 			name: routeName,
 		};
-		var url = `${protocol}//${hostname}:${port}/makeTCX`;
-		var theResp = await fetch(url, {
+		const url = `${protocol}//${hostname}:${port}/makeTCX`;
+		const theResp = await fetch(url, {
 			method: "POST",
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
@@ -561,16 +561,16 @@ async function generateOutput() {
 		doPrint = true;
 	}
 
-	if (theType == "google") {
+	if (theType === "google") {
 		doPrint = false;
-		var start = `${allPoints[0].lat},${allPoints[0].lng}`;
-		var destination = `${allPoints[0].lat},${allPoints[0].lng}`;
-		var waypoints = "";
+		const start = `${allPoints[0].lat},${allPoints[0].lng}`;
+		const destination = `${allPoints[0].lat},${allPoints[0].lng}`;
+		let waypoints = "";
 		for (const waypoint of currentWaypoints)
 			waypoints += `${waypoint.lat},${waypoint.lng}|`;
 		waypoints = waypoints.slice(0, -1);
-		var inputMode = document.getElementById("inputMode").value;
-		var travelmode = "bicycling";
+		const inputMode = document.getElementById("inputMode").value;
+		let travelmode = "bicycling";
 		if (inputMode.indexOf("driving") >= 0) travelmode = "driving";
 		if (inputMode.indexOf("foot") >= 0) travelmode = "walking";
 		const url = `https://www.google.com/maps/dir/?api=1&origin=${start}&destination=${destination}&waypoints=${waypoints}&dir_action=navigate&travelmode=${travelmode}`;
@@ -581,15 +581,15 @@ async function generateOutput() {
 		var theJson = { status: "google" };
 	}
 
-	if (theType == "link") {
+	if (theType === "link") {
 		saveConfiguration();
 		doPrint = false;
 		var theJson = { status: "link" };
 	}
 
-	if (theJson.status == "OK") {
-		var theInfo = "";
-		var theType = "";
+	if (theJson.status === "OK") {
+		let theInfo = "";
+		let theType = "";
 		if (theJson.hasOwnProperty("html")) {
 			theInfo = theJson.html;
 			theType = "html";
@@ -608,7 +608,7 @@ async function generateOutput() {
 				new Blob([theInfo], { type: "text/html" }),
 			);
 
-			const win = window.open(
+			window.open(
 				winUrl,
 				"win",
 				`width=800,height=400,screenX=200,screenY=200`,
@@ -616,9 +616,9 @@ async function generateOutput() {
 		}
 
 		if (doPrint) {
-			var useName = theJson.name;
+			let useName = theJson.name;
 			if (routeName.length > 0) useName = routeName;
-			var blob = new Blob([theInfo], { type: "text/html" });
+			const blob = new Blob([theInfo], { type: "text/html" });
 			saveAs(blob, `${useName}.${theType}`);
 		}
 	}
