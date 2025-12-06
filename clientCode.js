@@ -111,6 +111,26 @@ const getRLpoints = async () => {
 	return initialWaypoints;
 };
 
+const getDirections = async (initialWaypoints) => {
+	//Call the directions service using the guide point as waypoints.
+	const theMode = document.getElementById("inputMode").value;
+	const inputHighways = document.getElementById("inputHighways").value;
+	const inputFerries = avoidFerries;
+	const fitnessLevel = document.getElementById("fitnessLevel").value;
+	const greenFactor = document.getElementById("greenFactor").value;
+	const quietFactor = document.getElementById("quietFactor").value;
+	let url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
+	url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
+	url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
+	let waypointText = "";
+	for (const waypoint of initialWaypoints)
+		waypointText += `${waypoint.lat},${waypoint.lng}|`;
+	waypointText = waypointText.slice(0, -1);
+	url += `&waypoints=${waypointText}`;
+	const theResp = await fetch(url);
+	return await theResp.json();
+};
+
 //........................................................................................
 async function doRL(waypointsIn) {
 	//Clear any paths on the map if there are any.
@@ -149,23 +169,7 @@ async function doRL(waypointsIn) {
 	const RLBounds = guidepointPath.getBounds();
 	if (!waypointsIn) map.fitBounds(RLBounds);
 
-	//Call the directions service using the guide point as waypoints.
-	var theMode = document.getElementById("inputMode").value;
-	var inputHighways = document.getElementById("inputHighways").value;
-	var inputFerries = avoidFerries;
-	var fitnessLevel = document.getElementById("fitnessLevel").value;
-	var greenFactor = document.getElementById("greenFactor").value;
-	var quietFactor = document.getElementById("quietFactor").value;
-	var url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
-	url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
-	url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
-	var waypointText = "";
-	for (const waypoint of initialWaypoints)
-		waypointText += `${waypoint.lat},${waypoint.lng}|`;
-	waypointText = waypointText.slice(0, -1);
-	url += `&waypoints=${waypointText}`;
-	var theResp = await fetch(url);
-	var theJson = await theResp.json();
+	const theJson = await getDirections(initialWaypoints);
 
 	if (theJson.hasOwnProperty("error")) {
 		alert(
@@ -257,6 +261,12 @@ async function doRL(waypointsIn) {
 				waypoints.length = 0;
 				for (const waypoint of newWaypoints) waypoints.push(waypoint);
 
+				const theMode = document.getElementById("inputMode").value;
+				const inputHighways = document.getElementById("inputHighways").value;
+				const inputFerries = avoidFerries;
+				const fitnessLevel = document.getElementById("fitnessLevel").value;
+				const greenFactor = document.getElementById("greenFactor").value;
+				const quietFactor = document.getElementById("quietFactor").value;
 				//Generate a new path based on this new set of waypoints.
 				var url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
 				url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
