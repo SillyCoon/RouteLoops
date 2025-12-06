@@ -76,8 +76,7 @@ async function setAsHome(location) {
 		homeMarker.remove();
 	} catch {}
 
-	//Center the map on this location.
-	if (!waypointsIn) map.setView(new L.LatLng(location.lat, location.lng));
+	map.setView(new L.LatLng(location.lat, location.lng));
 
 	//Put a house marker at the start/end point.
 	const homeIcon = L.icon({
