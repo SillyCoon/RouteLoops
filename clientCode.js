@@ -169,6 +169,145 @@ const cleanMap = () => {
 	} catch {}
 };
 
+const improveDirections = async (allPoints, initialWaypoints) => {
+	//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
+	const rawPoints = [];
+	for (const point of allPoints)
+		rawPoints.push(new L.LatLng(point.lat, point.lng));
+	rawPath = new L.Polyline(rawPoints, {
+		color: "green",
+		weight: 2,
+		opacity: 1.0,
+		smoothFactor: 1,
+	});
+	rawPath.addTo(map);
+
+	let cleanTailsJson = {
+		cleanedUp: 0,
+		distKm: allPoints[allPoints.length - 1].cumulativeDistanceKm,
+		newPath: allPoints,
+	};
+
+	//Call a cleaning function until the result stabilizes
+	const ApiHeaders = {
+		Accept: "application/json",
+		"Content-Type": "application/json",
+	};
+	let keepGoing = true;
+	if (hasRouteLink) {
+		keepGoing = false;
+		hasRouteLink = false; //Reset this so that from now on it will perform the route cleaning
+	}
+	let countCalcs = 0;
+	const waypoints = [];
+	for (const waypoint of initialWaypoints) waypoints.push(waypoint);
+	lastCounts = { cleaned: -1, total: -1 };
+	while (keepGoing) {
+		countCalcs += 1;
+
+		//Take allPoints and clean up the path.
+		const data = { LLs: allPoints };
+		const url = `${protocol}//${hostname}:${port}/cleanTails`;
+		const theResp = await fetch(url, {
+			method: "POST",
+			body: JSON.stringify(data),
+			headers: ApiHeaders,
+		});
+		cleanTailsJson = await theResp.json();
+
+		if (cleanTailsJson.cleanedUp > 0) {
+			//You modified the path, so redo the whole thing with this modified path.
+			//Generate the new set of allPoints.
+			allPoints.length = 0;
+			for (const point of cleanTailsJson.newPath) allPoints.push(point);
+
+			//Based on the new allPoints, find the current set of waypoints.  Choose the closest points to the previous waypoints.
+			newWaypoints = [];
+			for (const waypoint of waypoints) {
+				let closest = null;
+				for (const point of allPoints) {
+					const separation =
+						Math.pow(waypoint.lat - point.lat, 2) +
+						Math.pow(waypoint.lng - point.lng, 2);
+					if (closest == null)
+						closest = { point: point, separation: separation };
+					if (separation < closest.separation)
+						closest = { point: point, separation: separation };
+				}
+				newWaypoints.push(closest.point);
+			}
+			waypoints.length = 0;
+			for (const waypoint of newWaypoints) waypoints.push(waypoint);
+
+			const theMode = document.getElementById("inputMode").value;
+			const inputHighways = document.getElementById("inputHighways").value;
+			const inputFerries = avoidFerries;
+			const fitnessLevel = document.getElementById("fitnessLevel").value;
+			const greenFactor = document.getElementById("greenFactor").value;
+			const quietFactor = document.getElementById("quietFactor").value;
+			//Generate a new path based on this new set of waypoints.
+			let url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
+			url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
+			url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
+			let waypointText = "";
+			for (const waypoint of waypoints)
+				waypointText += `${waypoint.lat},${waypoint.lng}|`;
+			waypointText = waypointText.slice(0, -1);
+			url += `&waypoints=${waypointText}`;
+			const theResp = await fetch(url);
+			const directionsJson = await theResp.json();
+			allPoints = directionsJson.features[0].allPoints;
+		} else {
+			//No change, so that's it.
+			keepGoing = false;
+		}
+
+		if (
+			cleanTailsJson.cleanedUp === lastCounts.cleaned &&
+			allPoints.length === lastCounts.total
+		) {
+			//The modifications are not changing, so stop
+			keepGoing = false;
+		} else {
+			lastCounts = {
+				cleaned: cleanTailsJson.cleanedUp,
+				total: allPoints.length,
+			};
+		}
+	}
+
+	let distDisplay = cleanTailsJson.distKm;
+	const units = document.getElementById("inputUnits").value;
+	if (units === "imperial")
+		distDisplay = (distDisplay * 1000 * 100) / 2.54 / 12 / 5280;
+	document.getElementById("outDist").innerHTML = distDisplay.toFixed(1);
+	document.getElementById("calcs").innerHTML = countCalcs;
+
+	//Draw the cleaned result on the map.
+	const rlPoints = [];
+	for (const point of allPoints)
+		rlPoints.push(new L.LatLng(point.lat, point.lng));
+	rlPath = new L.Polyline(rlPoints, {
+		color: "red",
+		weight: 3,
+		opacity: 1.0,
+		smoothFactor: 1,
+	});
+	rlPath.addTo(map);
+
+	//Remove the other lines if that's desired.
+	//var yes = confirm("Remove other lines?");
+	var yes = true;
+	if (yes) {
+		map.removeLayer(rawPath);
+		map.removeLayer(guidepointPath);
+	}
+
+	currentWaypoints = JSON.parse(JSON.stringify(waypoints));
+
+	return;
+};
+
 //........................................................................................
 async function doRL(waypointsIn) {
 	cleanMap();
@@ -177,151 +316,14 @@ async function doRL(waypointsIn) {
 
 	const theJson = await getDirections(initialWaypoints);
 
-	if (error in theJson) {
+	if ("error" in theJson) {
 		alert(
 			`The routing server has returned an error.  Try again with a slightly shorter route.  The error returned was "${theJson.error}"`,
 		);
 		cleanMap();
 		return;
 	} else {
-		allPoints = theJson.features[0].allPoints;
-
-		//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
-		var rawPoints = [];
-		for (const point of allPoints)
-			rawPoints.push(new L.LatLng(point.lat, point.lng));
-		rawPath = new L.Polyline(rawPoints, {
-			color: "green",
-			weight: 2,
-			opacity: 1.0,
-			smoothFactor: 1,
-		});
-		rawPath.addTo(map);
-
-		var cleanTailsJson = {
-			cleanedUp: 0,
-			distKm: allPoints[allPoints.length - 1].cumulativeDistanceKm,
-			newPath: allPoints,
-		};
-
-		//Call a cleaning function until the result stabilizes
-		var ApiHeaders = {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		};
-		var keepGoing = true;
-		if (hasRouteLink) {
-			keepGoing = false;
-			hasRouteLink = false; //Reset this so that from now on it will perform the route cleaning
-		}
-		var countCalcs = 0;
-		var waypoints = [];
-		for (const waypoint of initialWaypoints) waypoints.push(waypoint);
-		lastCounts = { cleaned: -1, total: -1 };
-		while (keepGoing) {
-			countCalcs += 1;
-
-			//Take allPoints and clean up the path.
-			var data = { LLs: allPoints };
-			var url = `${protocol}//${hostname}:${port}/cleanTails`;
-			var theResp = await fetch(url, {
-				method: "POST",
-				body: JSON.stringify(data),
-				headers: ApiHeaders,
-			});
-			var cleanTailsJson = await theResp.json();
-
-			if (cleanTailsJson.cleanedUp > 0) {
-				//You modified the path, so redo the whole thing with this modified path.
-				//Generate the new set of allPoints.
-				allPoints.length = 0;
-				for (const point of cleanTailsJson.newPath) allPoints.push(point);
-
-				//Based on the new allPoints, find the current set of waypoints.  Choose the closest points to the previous waypoints.
-				newWaypoints = [];
-				for (const waypoint of waypoints) {
-					var closest = null;
-					for (const point of allPoints) {
-						var separation =
-							Math.pow(waypoint.lat - point.lat, 2) +
-							Math.pow(waypoint.lng - point.lng, 2);
-						if (closest == null)
-							closest = { point: point, separation: separation };
-						if (separation < closest.separation)
-							closest = { point: point, separation: separation };
-					}
-					newWaypoints.push(closest.point);
-				}
-				waypoints.length = 0;
-				for (const waypoint of newWaypoints) waypoints.push(waypoint);
-
-				const theMode = document.getElementById("inputMode").value;
-				const inputHighways = document.getElementById("inputHighways").value;
-				const inputFerries = avoidFerries;
-				const fitnessLevel = document.getElementById("fitnessLevel").value;
-				const greenFactor = document.getElementById("greenFactor").value;
-				const quietFactor = document.getElementById("quietFactor").value;
-				//Generate a new path based on this new set of waypoints.
-				var url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
-				url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
-				url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
-				var waypointText = "";
-				for (const waypoint of waypoints)
-					waypointText += `${waypoint.lat},${waypoint.lng}|`;
-				waypointText = waypointText.slice(0, -1);
-				url += `&waypoints=${waypointText}`;
-				var theResp = await fetch(url);
-				var directionsJson = await theResp.json();
-				allPoints = directionsJson.features[0].allPoints;
-			} else {
-				//No change, so that's it.
-				keepGoing = false;
-			}
-
-			if (
-				cleanTailsJson.cleanedUp == lastCounts.cleaned &&
-				allPoints.length == lastCounts.total
-			) {
-				//The modifications are not changing, so stop
-				keepGoing = false;
-			} else {
-				lastCounts = {
-					cleaned: cleanTailsJson.cleanedUp,
-					total: allPoints.length,
-				};
-			}
-		}
-
-		var distDisplay = cleanTailsJson.distKm;
-		var units = document.getElementById("inputUnits").value;
-		if (units == "imperial")
-			distDisplay = (distDisplay * 1000 * 100) / 2.54 / 12 / 5280;
-		document.getElementById("outDist").innerHTML = distDisplay.toFixed(1);
-		document.getElementById("calcs").innerHTML = countCalcs;
-
-		//Draw the cleaned result on the map.
-		var rlPoints = [];
-		for (const point of allPoints)
-			rlPoints.push(new L.LatLng(point.lat, point.lng));
-		rlPath = new L.Polyline(rlPoints, {
-			color: "red",
-			weight: 3,
-			opacity: 1.0,
-			smoothFactor: 1,
-		});
-		rlPath.addTo(map);
-
-		//Remove the other lines if that's desired.
-		//var yes = confirm("Remove other lines?");
-		var yes = true;
-		if (yes) {
-			map.removeLayer(rawPath);
-			map.removeLayer(guidepointPath);
-		}
-
-		currentWaypoints = JSON.parse(JSON.stringify(waypoints));
-
-		return;
+		improveDirections(theJson.features[0].allPoints, initialWaypoints);
 	}
 }
 
