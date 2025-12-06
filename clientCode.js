@@ -189,10 +189,6 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 	};
 
 	//Call a cleaning function until the result stabilizes
-	const ApiHeaders = {
-		Accept: "application/json",
-		"Content-Type": "application/json",
-	};
 	let keepGoing = true;
 	if (hasRouteLink) {
 		keepGoing = false;
@@ -206,14 +202,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 		countCalcs += 1;
 
 		//Take allPoints and clean up the path.
-		const data = { LLs: allPoints };
-		const url = `${protocol}//${hostname}:${port}/cleanTails`;
-		const theResp = await fetch(url, {
-			method: "POST",
-			body: JSON.stringify(data),
-			headers: ApiHeaders,
-		});
-		cleanTailsJson = await theResp.json();
+		cleanTailsJson = await fetchFromServer("cleanTails", { LLs: allPoints });
 
 		if (cleanTailsJson.cleanedUp > 0) {
 			//You modified the path, so redo the whole thing with this modified path.
