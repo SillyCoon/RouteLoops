@@ -454,15 +454,15 @@ async function doRL(waypointsIn) {
 
 //......................................................................................................
 async function generateOutput() {
-	var theType = document.getElementById("createOutput").value;
+	const theType = document.getElementById("createOutput").value;
 	if (theType === "none") return;
 
-	var routeName = document.getElementById("routeName").value.trim();
-	var units = document.getElementById("inputUnits").value;
-	var mode = document.getElementById("inputMode").value;
-	var advanceUnits = "meters";
-	var pace = "kph";
-	var paceDefault = 25;
+	const routeName = document.getElementById("routeName").value.trim();
+	const units = document.getElementById("inputUnits").value;
+	const mode = document.getElementById("inputMode").value;
+	let advanceUnits = "meters";
+	let pace = "kph";
+	let paceDefault = 25;
 	if (mode === "walking") {
 		pace = "minutes-per-kilometer";
 		paceDefault = 6; //min per km
@@ -476,6 +476,8 @@ async function generateOutput() {
 			packetDefault = 10; //min per mile
 		}
 	}
+
+	let theJson;
 
 	const ApiHeaders = {
 		Accept: "application/json",
@@ -495,7 +497,7 @@ async function generateOutput() {
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
 		});
-		var theJson = await theResp.json();
+		theJson = await theResp.json();
 		doPrint = confirm("Print it?");
 		doShow = true;
 	}
@@ -508,7 +510,7 @@ async function generateOutput() {
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
 		});
-		var theJson = await theResp.json();
+		theJson = await theResp.json();
 		doPrint = true;
 	}
 
@@ -522,7 +524,7 @@ async function generateOutput() {
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
 		});
-		var theJson = await theResp.json();
+		theJson = await theResp.json();
 		doPrint = true;
 	}
 
@@ -546,7 +548,7 @@ async function generateOutput() {
 			body: JSON.stringify(data),
 			headers: ApiHeaders,
 		});
-		var theJson = await theResp.json();
+		theJson = await theResp.json();
 		doPrint = true;
 	}
 
@@ -567,13 +569,13 @@ async function generateOutput() {
 			`This will open a new window with the "anchor" points displayed on Google Maps.  Google will do its own routing, which is very likely NOT going to be the same as the RouteLoops routing.`,
 		);
 		window.open(url, "_blank");
-		var theJson = { status: "google" };
+		theJson = { status: "google" };
 	}
 
 	if (theType === "link") {
 		saveConfiguration();
 		doPrint = false;
-		var theJson = { status: "link" };
+		theJson = { status: "link" };
 	}
 
 	if (theJson.status === "OK") {
