@@ -7,7 +7,6 @@ let map;
 let rlPath, rawPath, guidepointPath;
 let allPoints;
 let currentWaypoints = [];
-const directionMarkers = [];
 let homeMarker;
 const { protocol, hostname, port } = window.location;
 const urlParams = new URLSearchParams(window.location.search);
@@ -181,17 +180,16 @@ async function doRL(waypointsIn) {
 		);
 		try {
 			map.removeLayer(rlPath);
-		} catch (err) {}
+		} catch {}
 		try {
 			map.removeLayer(rawPath);
-		} catch (err) {}
+		} catch {}
 		try {
 			map.removeLayer(guidepointPath);
-		} catch (err) {}
+		} catch {}
 		try {
 			homeMarker.remove();
-		} catch (err) {}
-		for (const marker of directionMarkers) map.removeLayer(marker);
+		} catch {}
 		return;
 	} else {
 		allPoints = theJson.features[0].allPoints;
