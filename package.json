@@ -9,5 +9,8 @@
 	},
 	"scripts": {
 		"start": "bun ./serverCodeOsm.js"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.8"
 	}
 }
