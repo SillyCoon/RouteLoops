@@ -73,7 +73,7 @@ function changeMode() {
 async function setAsHome(location) {
 	try {
 		homeMarker.remove();
-	} catch {}
+	} catch { }
 
 	map.setView(new L.LatLng(location.lat, location.lng));
 
@@ -157,16 +157,16 @@ const cleanMap = () => {
 	//Clear any paths on the map if there are any.
 	try {
 		map.removeLayer(rlPath);
-	} catch {}
+	} catch { }
 	try {
 		map.removeLayer(rawPath);
-	} catch {}
+	} catch { }
 	try {
 		map.removeLayer(guidepointPath);
-	} catch {}
+	} catch { }
 	try {
 		homeMarker.remove();
-	} catch {}
+	} catch { }
 };
 
 const improveDirections = async (allPoints, initialWaypoints) => {
@@ -255,25 +255,18 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 	document.getElementById("outDist").innerHTML = distDisplay.toFixed(1);
 	document.getElementById("calcs").innerHTML = countCalcs;
 
-	//Draw the cleaned result on the map.
-	const rlPoints = [];
-	for (const point of allPoints)
-		rlPoints.push(new L.LatLng(point.lat, point.lng));
-	rlPath = new L.Polyline(rlPoints, {
-		color: "red",
-		weight: 3,
-		opacity: 1.0,
-		smoothFactor: 1,
-	});
+	rlPath = new L.Polyline(
+		allPoints.map(point => new L.LatLng(point.lat, point.lng)),
+		{
+			color: "red",
+			weight: 3,
+			opacity: 1.0,
+			smoothFactor: 1,
+		});
 	rlPath.addTo(map);
 
-	//Remove the other lines if that's desired.
-	//var yes = confirm("Remove other lines?");
-	var yes = true;
-	if (yes) {
-		map.removeLayer(rawPath);
-		map.removeLayer(guidepointPath);
-	}
+	map.removeLayer(rawPath);
+	map.removeLayer(guidepointPath);
 
 	currentWaypoints = JSON.parse(JSON.stringify(waypoints));
 
