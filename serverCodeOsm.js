@@ -12,15 +12,12 @@ app.use(express.static("./"));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-app.get("/info", info);
 app.get("/directions", directions);
 app.post("/directions", directions);
 app.get("/getRLpoints", getRLpoints);
 app.post("/getRLpoints", getRLpoints);
 app.get("/cleanTails", cleanTails);
 app.post("/cleanTails", cleanTails);
-app.get("/modifyDirections", modifyDirections);
-app.post("/modifyDirections", modifyDirections);
 app.post("/showDirections", showDirections);
 app.post("/makeSparseGPX", makeSparseGPX);
 app.post("/makeDenseGPX", makeDenseGPX);
@@ -82,16 +79,6 @@ const cleanUpInterval = setInterval(
 	},
 	24 * 60 * 60 * 1000,
 );
-
-//.......................................................................
-function info(req, res, next) {
-	var html = fs.readFileSync("./info.html");
-	res.writeHead(200, { "Content-type": "text/html" });
-	res.end(html);
-
-	return;
-}
-//..................................................................
 
 async function directions(req, res, next) {
 	var method = req.method;
@@ -300,42 +287,6 @@ async function directions(req, res, next) {
 	} else if (method.toLowerCase() == "post") {
 	}
 }
-
-//.............................................................................
-async function geocode(req, res, next) {
-	var method = req.method;
-	var url = req.url;
-
-	if (method.toLowerCase() == "get") {
-		//console.log('url ' + url);
-		var split1 = url.split("?");
-		var result = { location: null };
-		if (split1.length > 1) {
-			var query = split1[1];
-			var split2 = query.split("&");
-			for (var i = 0; i < split2.length; i++) {
-				var split3 = split2[i].split("=");
-				if (split3[0] == "location") result.location = split3[1];
-			}
-		}
-		console.log("Doing a geocode GET call:");
-		console.log(JSON.stringify(result, null, 2));
-
-		var api_root = "https://api.openrouteservice.org/geocode/search?";
-		var theLocation = result.location;
-		var key = process.env.OSM_API_KEY;
-		var url = api_root + `text = ${theLocation}& api_key=${key} `;
-		console.log(url);
-
-		const response = await fetch(url);
-		const theJson = await response.json();
-		//console.log(JSON.stringify(theJson));
-		res.json(theJson);
-	} else if (method.toLowerCase() == "post") {
-	}
-}
-
-//...........................................................................................
 
 async function getRLpoints(req, res, next) {
 	var method = req.method;
@@ -806,53 +757,6 @@ async function cleanTails(req, res, next) {
 			);
 
 		res.json({ newPath: newPath, cleanedUp: cleanedUp, distKm: finalDistance });
-	}
-}
-
-//..........................................................
-function modifyDirections(req, res, next) {
-	var method = req.method;
-	var url = req.url;
-	if (method.toLowerCase() == "get") {
-	} else if (method.toLowerCase() == "post") {
-		var body = req.body;
-		var allPoints = body.allPoints;
-
-		var cumulativeDistance = 0;
-		allPoints[0].cumulativeDistanceKm = 0;
-		for (var a = 1; a < allPoints.length; a++) {
-			cumulativeDistance += LatLngDist(
-				allPoints[a - 1].lat,
-				allPoints[a - 1].lng,
-				allPoints[a].lat,
-				allPoints[a].lng,
-			);
-			allPoints[a].cumulativeDistanceKm = cumulativeDistance;
-		}
-		//Get distance to next instruction
-		for (var a = 0; a < allPoints.length; a++) {
-			if (!allPoints[a].hasOwnProperty("instructions")) continue;
-			var distanceToNext = 0;
-			for (var b = a + 1; b < allPoints.length; b++) {
-				distanceToNext += LatLngDist(
-					allPoints[b - 1].lat,
-					allPoints[b - 1].lng,
-					allPoints[b].lat,
-					allPoints[b].lng,
-				);
-				if (allPoints[b].hasOwnProperty("instructions")) break;
-			}
-			allPoints[a].distanceToNextKm = distanceToNext;
-			allPoints[a].nextInstructionAt = b;
-			a = b - 1; //Because it will increment when it goes back to the top.
-		}
-
-		var totalDistanceKm = cumulativeDistance;
-
-		res.json({
-			modifiedAllPoints: allPoints,
-			totalDistanceKm: totalDistanceKm,
-		});
 	}
 }
 
