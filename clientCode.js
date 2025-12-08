@@ -167,7 +167,7 @@ const cleanMap = () => {
 	} catch {}
 };
 
-const improvementIteration = async (waypoints, prevLastCounts) => {
+const improvementIteration = async (allPoints, waypoints, prevLastCounts) => {
 	let keepGoing = true;
 	let newWaypoints = [];
 	const cleanTailsJson = await fetchFromServer("cleanTails", {
@@ -217,7 +217,7 @@ const improvementIteration = async (waypoints, prevLastCounts) => {
 		};
 	}
 	return {
-		cleanTailsJson,
+		distance: cleanTailsJson.distKm,
 		lastCounts: lastCounts,
 		waypoints: newWaypoints,
 		keepGoing: keepGoing,
@@ -239,12 +239,6 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 	});
 	rawPath.addTo(map);
 
-	let cleanTailsJson = {
-		cleanedUp: 0,
-		distKm: allPoints[allPoints.length - 1].cumulativeDistanceKm,
-		newPath: allPoints,
-	};
-
 	//Call a cleaning function until the result stabilizes
 	let keepGoing = true;
 	if (hasRouteLink) {
@@ -254,19 +248,23 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 	let countCalcs = 0;
 	let waypoints = [...initialWaypoints];
 	lastCounts = { cleaned: -1, total: -1 };
+	let distance = allPoints[allPoints.length - 1].cumulativeDistanceKm;
 
 	while (keepGoing) {
 		countCalcs += 1;
-		const iterationResult = await improvementIteration(waypoints, lastCounts);
+		const iterationResult = await improvementIteration(
+			allPoints,
+			waypoints,
+			lastCounts,
+		);
 
 		lastCounts = iterationResult.lastCounts;
 		waypoints = iterationResult.waypoints;
 		keepGoing = iterationResult.keepGoing;
-		cleanTailsJson = iterationResult.cleanTailsJson;
+		distance = iterationResult.distance;
 	}
 
-	const distDisplay = cleanTailsJson.distKm;
-	document.getElementById("outDist").innerHTML = distDisplay.toFixed(1);
+	document.getElementById("outDist").innerHTML = distance.toFixed(1);
 	document.getElementById("calcs").innerHTML = countCalcs;
 
 	rlPath = new L.Polyline(
