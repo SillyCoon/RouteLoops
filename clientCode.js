@@ -223,36 +223,18 @@ const improvementIteration = async (allPoints, waypoints, prevLastCounts) => {
 	};
 };
 
-const improveDirections = async (allPoints, initialWaypoints) => {
-	let lastCounts = { cleaned: -1, total: -1 };
-
-	//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
-	const rawPoints = [];
-	for (const point of allPoints)
-		rawPoints.push(new L.LatLng(point.lat, point.lng));
-	rawPath = new L.Polyline(rawPoints, {
-		color: "green",
-		weight: 2,
-		opacity: 1.0,
-		smoothFactor: 1,
-	});
-	rawPath.addTo(map);
-
-	//Call a cleaning function until the result stabilizes
-	let keepGoing = true;
-	if (hasRouteLink) {
-		keepGoing = false;
-		hasRouteLink = false; //Reset this so that from now on it will perform the route cleaning
-	}
-	let countCalcs = 0;
+const improvementCycle = async (rawPoints, initialWaypoints) => {
+	let finalPoints = [...rawPoints];
 	let waypoints = [...initialWaypoints];
-	lastCounts = { cleaned: -1, total: -1 };
-	let distance = allPoints[allPoints.length - 1].cumulativeDistanceKm;
+	let lastCounts = { cleaned: -1, total: -1 };
+	let distance = rawPoints[rawPoints.length - 1].cumulativeDistanceKm;
+	let keepGoing = true;
+	let countCalcs = 0;
 
 	while (keepGoing) {
 		countCalcs += 1;
 		const iterationResult = await improvementIteration(
-			allPoints,
+			finalPoints,
 			waypoints,
 			lastCounts,
 		);
@@ -262,14 +244,38 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 		waypoints = iterationResult.waypoints;
 		keepGoing = iterationResult.keepGoing;
 		distance = iterationResult.distance;
-		allPoints = iterationResult.allPoints;
+		finalPoints = iterationResult.allPoints;
 	}
+
+	return { cleanPoints: finalPoints, waypoints, distance, countCalcs };
+};
+
+const improveDirections = async (rawPoints, initialWaypoints) => {
+	//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
+	rawPath = new L.Polyline(rawPoints, {
+		color: "green",
+		weight: 2,
+		opacity: 1.0,
+		smoothFactor: 1,
+	});
+	rawPath.addTo(map);
+
+	const { cleanPoints, waypoints, distance, countCalcs } = !hasRouteLink
+		? await improvementCycle(rawPoints, initialWaypoints)
+		: {
+				countCalcs: 0,
+				cleanPoints: rawPoints,
+				waypoints: initialWaypoints,
+				distance: rawPoints[rawPoints.length - 1].cumulativeDistanceKm,
+			};
+
+	hasRouteLink = false;
 
 	document.getElementById("outDist").innerHTML = distance.toFixed(1);
 	document.getElementById("calcs").innerHTML = countCalcs;
 
 	rlPath = new L.Polyline(
-		allPoints.map((point) => new L.LatLng(point.lat, point.lng)),
+		cleanPoints.map((point) => new L.LatLng(point.lat, point.lng)),
 		{
 			color: "red",
 			weight: 3,
@@ -284,7 +290,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 
 	currentWaypoints = JSON.parse(JSON.stringify(waypoints));
 
-	return allPoints;
+	return cleanPoints;
 };
 
 //........................................................................................
