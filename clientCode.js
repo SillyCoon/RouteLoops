@@ -190,22 +190,19 @@ const improvementIteration = async (allPoints, waypoints, prevLastCounts) => {
 		};
 	}
 
-	const newWaypoints = [];
-
-	//You modified the path, so redo the whole thing with this modified path.
-	//Based on the new allPoints, find the current set of waypoints.  Choose the closest points to the previous waypoints.
-	for (const waypoint of waypoints) {
-		let closest = null;
-		for (const point of cleanTailsJson.newPath) {
+	// You modified the path, so redo with the cleaned path.
+	// FP-style: map each previous waypoint to closest point in newPath using reduce.
+	const newWaypoints = waypoints.map((waypoint) => {
+		const closest = cleanTailsJson.newPath.reduce((best, point) => {
 			const separation =
-				Math.pow(waypoint.lat - point.lat, 2) +
-				Math.pow(waypoint.lng - point.lng, 2);
-			if (closest == null) closest = { point: point, separation: separation };
-			if (separation < closest.separation)
-				closest = { point: point, separation: separation };
-		}
-		newWaypoints.push(closest.point);
-	}
+				(waypoint.lat - point.lat) ** 2 + (waypoint.lng - point.lng) ** 2;
+			if (best == null || separation < best.separation) {
+				return { point, separation };
+			}
+			return best;
+		}, null);
+		return closest.point;
+	});
 
 	// Use the updated waypoint set for the next directions call
 	const directionsJson = await getDirections(newWaypoints);
