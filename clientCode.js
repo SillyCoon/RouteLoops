@@ -11,8 +11,6 @@ let homeMarker;
 const { protocol, hostname, port } = window.location;
 const urlParams = new URLSearchParams(window.location.search);
 let hasRouteLink = false;
-let lastCounts = { cleaned: -1, total: -1 };
-let newWaypoints = [];
 
 const avoidFerries = "yes";
 const method = "random";
@@ -170,6 +168,9 @@ const cleanMap = () => {
 };
 
 const improveDirections = async (allPoints, initialWaypoints) => {
+	let lastCounts = { cleaned: -1, total: -1 };
+	let newWaypoints = [];
+
 	//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
 	const rawPoints = [];
 	for (const point of allPoints)
@@ -195,8 +196,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 		hasRouteLink = false; //Reset this so that from now on it will perform the route cleaning
 	}
 	let countCalcs = 0;
-	let waypoints = [];
-	for (const waypoint of initialWaypoints) waypoints.push(waypoint);
+	let waypoints = [...initialWaypoints];
 	lastCounts = { cleaned: -1, total: -1 };
 	while (keepGoing) {
 		countCalcs += 1;
