@@ -248,10 +248,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 		}
 	}
 
-	let distDisplay = cleanTailsJson.distKm;
-	const units = document.getElementById("inputUnits").value;
-	if (units === "imperial")
-		distDisplay = (distDisplay * 1000 * 100) / 2.54 / 12 / 5280;
+	const distDisplay = cleanTailsJson.distKm;
 	document.getElementById("outDist").innerHTML = distDisplay.toFixed(1);
 	document.getElementById("calcs").innerHTML = countCalcs;
 
@@ -319,21 +316,12 @@ async function generateOutput() {
 	const routeName = document.getElementById("routeName").value.trim();
 	const units = document.getElementById("inputUnits").value;
 	const mode = document.getElementById("inputMode").value;
-	let advanceUnits = "meters";
+	const advanceUnits = "meters";
 	let pace = "kph";
 	let paceDefault = 25;
 	if (mode === "walking") {
 		pace = "minutes-per-kilometer";
 		paceDefault = 6; //min per km
-	}
-	if (units === "imperial") {
-		advanceUnits = "feet";
-		pace = "mph";
-		paceDefault = 16;
-		if (mode === "walking") {
-			pace = "minutes-per-mile";
-			paceDefault = 10; //min per mile
-		}
 	}
 
 	let theJson;
