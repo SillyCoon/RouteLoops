@@ -172,6 +172,10 @@ const improvementIteration = async (allPoints, waypoints, prevLastCounts) => {
 		LLs: allPoints,
 	});
 
+	console.log(
+		`Cleaned up ${cleanTailsJson.cleanedUp} points; new distance ${cleanTailsJson.distKm.toFixed(2)} km`,
+	);
+
 	if (cleanTailsJson.cleanedUp === 0) {
 		//No modifications were made, so stop
 		return {
@@ -182,20 +186,17 @@ const improvementIteration = async (allPoints, waypoints, prevLastCounts) => {
 				total: allPoints.length,
 			},
 			waypoints,
+			allPoints,
 		};
 	}
 
 	const newWaypoints = [];
 
 	//You modified the path, so redo the whole thing with this modified path.
-	//Generate the new set of allPoints.
-	allPoints.length = 0;
-	for (const point of cleanTailsJson.newPath) allPoints.push(point);
-
 	//Based on the new allPoints, find the current set of waypoints.  Choose the closest points to the previous waypoints.
 	for (const waypoint of waypoints) {
 		let closest = null;
-		for (const point of allPoints) {
+		for (const point of cleanTailsJson.newPath) {
 			const separation =
 				Math.pow(waypoint.lat - point.lat, 2) +
 				Math.pow(waypoint.lng - point.lng, 2);
@@ -206,20 +207,22 @@ const improvementIteration = async (allPoints, waypoints, prevLastCounts) => {
 		newWaypoints.push(closest.point);
 	}
 
-	const directionsJson = await getDirections(waypoints);
-	allPoints = directionsJson.features[0].allPoints;
+	// Use the updated waypoint set for the next directions call
+	const directionsJson = await getDirections(newWaypoints);
+	const newPoints = directionsJson.features[0].allPoints;
 
 	return {
 		keepGoing: !(
 			cleanTailsJson.cleanedUp === prevLastCounts.cleaned &&
-			allPoints.length === prevLastCounts.total
+			newPoints.length === prevLastCounts.total
 		),
 		distance: cleanTailsJson.distKm,
 		lastCounts: {
 			cleaned: cleanTailsJson.cleanedUp,
-			total: allPoints.length,
+			total: newPoints.length,
 		},
 		waypoints: newWaypoints,
+		allPoints: newPoints,
 	};
 };
 
@@ -256,11 +259,13 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 			waypoints,
 			lastCounts,
 		);
+		console.log("Iteration result", iterationResult);
 
 		lastCounts = iterationResult.lastCounts;
 		waypoints = iterationResult.waypoints;
 		keepGoing = iterationResult.keepGoing;
 		distance = iterationResult.distance;
+		allPoints = iterationResult.allPoints;
 	}
 
 	document.getElementById("outDist").innerHTML = distance.toFixed(1);
@@ -282,7 +287,7 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 
 	currentWaypoints = JSON.parse(JSON.stringify(waypoints));
 
-	return;
+	return allPoints;
 };
 
 //........................................................................................
@@ -300,7 +305,10 @@ async function doRL(waypointsIn) {
 		cleanMap();
 		return;
 	} else {
-		improveDirections(theJson.features[0].allPoints, initialWaypoints);
+		allPoints = await improveDirections(
+			theJson.features[0].allPoints,
+			initialWaypoints,
+		);
 	}
 }
 
