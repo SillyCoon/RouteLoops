@@ -71,7 +71,7 @@ function changeMode() {
 async function setAsHome(location) {
 	try {
 		homeMarker.remove();
-	} catch { }
+	} catch {}
 
 	map.setView(new L.LatLng(location.lat, location.lng));
 
@@ -155,21 +155,77 @@ const cleanMap = () => {
 	//Clear any paths on the map if there are any.
 	try {
 		map.removeLayer(rlPath);
-	} catch { }
+	} catch {}
 	try {
 		map.removeLayer(rawPath);
-	} catch { }
+	} catch {}
 	try {
 		map.removeLayer(guidepointPath);
-	} catch { }
+	} catch {}
 	try {
 		homeMarker.remove();
-	} catch { }
+	} catch {}
+};
+
+const improvementIteration = async (waypoints, prevLastCounts) => {
+	let keepGoing = true;
+	let newWaypoints = [];
+	const cleanTailsJson = await fetchFromServer("cleanTails", {
+		LLs: allPoints,
+	});
+
+	if (cleanTailsJson.cleanedUp > 0) {
+		//You modified the path, so redo the whole thing with this modified path.
+		//Generate the new set of allPoints.
+		allPoints.length = 0;
+		for (const point of cleanTailsJson.newPath) allPoints.push(point);
+
+		//Based on the new allPoints, find the current set of waypoints.  Choose the closest points to the previous waypoints.
+		newWaypoints = [];
+		for (const waypoint of waypoints) {
+			let closest = null;
+			for (const point of allPoints) {
+				const separation =
+					Math.pow(waypoint.lat - point.lat, 2) +
+					Math.pow(waypoint.lng - point.lng, 2);
+				if (closest == null) closest = { point: point, separation: separation };
+				if (separation < closest.separation)
+					closest = { point: point, separation: separation };
+			}
+			newWaypoints.push(closest.point);
+		}
+
+		const directionsJson = await getDirections(waypoints);
+		allPoints = directionsJson.features[0].allPoints;
+	} else {
+		//No change, so that's it.
+		keepGoing = false;
+	}
+
+	let lastCounts = prevLastCounts;
+
+	if (
+		cleanTailsJson.cleanedUp === lastCounts.cleaned &&
+		allPoints.length === lastCounts.total
+	) {
+		//The modifications are not changing, so stop
+		keepGoing = false;
+	} else {
+		lastCounts = {
+			cleaned: cleanTailsJson.cleanedUp,
+			total: allPoints.length,
+		};
+	}
+	return {
+		cleanTailsJson,
+		lastCounts: lastCounts,
+		waypoints: newWaypoints,
+		keepGoing: keepGoing,
+	};
 };
 
 const improveDirections = async (allPoints, initialWaypoints) => {
 	let lastCounts = { cleaned: -1, total: -1 };
-	let newWaypoints = [];
 
 	//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
 	const rawPoints = [];
@@ -198,54 +254,15 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 	let countCalcs = 0;
 	let waypoints = [...initialWaypoints];
 	lastCounts = { cleaned: -1, total: -1 };
+
 	while (keepGoing) {
 		countCalcs += 1;
+		const iterationResult = await improvementIteration(waypoints, lastCounts);
 
-		//Take allPoints and clean up the path.
-		cleanTailsJson = await fetchFromServer("cleanTails", { LLs: allPoints });
-
-		if (cleanTailsJson.cleanedUp > 0) {
-			//You modified the path, so redo the whole thing with this modified path.
-			//Generate the new set of allPoints.
-			allPoints.length = 0;
-			for (const point of cleanTailsJson.newPath) allPoints.push(point);
-
-			//Based on the new allPoints, find the current set of waypoints.  Choose the closest points to the previous waypoints.
-			newWaypoints = [];
-			for (const waypoint of waypoints) {
-				let closest = null;
-				for (const point of allPoints) {
-					const separation =
-						Math.pow(waypoint.lat - point.lat, 2) +
-						Math.pow(waypoint.lng - point.lng, 2);
-					if (closest == null)
-						closest = { point: point, separation: separation };
-					if (separation < closest.separation)
-						closest = { point: point, separation: separation };
-				}
-				newWaypoints.push(closest.point);
-			}
-			waypoints = newWaypoints;
-
-			const directionsJson = await getDirections(waypoints);
-			allPoints = directionsJson.features[0].allPoints;
-		} else {
-			//No change, so that's it.
-			keepGoing = false;
-		}
-
-		if (
-			cleanTailsJson.cleanedUp === lastCounts.cleaned &&
-			allPoints.length === lastCounts.total
-		) {
-			//The modifications are not changing, so stop
-			keepGoing = false;
-		} else {
-			lastCounts = {
-				cleaned: cleanTailsJson.cleanedUp,
-				total: allPoints.length,
-			};
-		}
+		lastCounts = iterationResult.lastCounts;
+		waypoints = iterationResult.waypoints;
+		keepGoing = iterationResult.keepGoing;
+		cleanTailsJson = iterationResult.cleanTailsJson;
 	}
 
 	const distDisplay = cleanTailsJson.distKm;
@@ -253,13 +270,14 @@ const improveDirections = async (allPoints, initialWaypoints) => {
 	document.getElementById("calcs").innerHTML = countCalcs;
 
 	rlPath = new L.Polyline(
-		allPoints.map(point => new L.LatLng(point.lat, point.lng)),
+		allPoints.map((point) => new L.LatLng(point.lat, point.lng)),
 		{
 			color: "red",
 			weight: 3,
 			opacity: 1.0,
 			smoothFactor: 1,
-		});
+		},
+	);
 	rlPath.addTo(map);
 
 	map.removeLayer(rawPath);
