@@ -93,20 +93,25 @@ export function buildOptions(result) {
 }
 
 const fetchDirections = async (mode, data) => {
-	const response = await fetch(
-		`https://api.openrouteservice.org/v2/directions/${mode}/geojson`,
-		{
-			method: "POST",
-			body: JSON.stringify(data),
-			headers: {
-				Accept:
-					"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
-				Authorization: process.env.OSM_API_KEY,
-				"Content-Type": "application/json; charset=utf-8",
+	try {
+		const response = await fetch(
+			`https://api.openrouteservice.org/v2/directions/${mode}/geojson`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+				headers: {
+					Accept:
+						"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
+					Authorization: process.env.OSM_API_KEY,
+					"Content-Type": "application/json; charset=utf-8",
+				},
 			},
-		},
-	);
-	return response.json();
+		);
+		return response.json();
+	} catch (error) {
+		console.log("Error in fetchDirections:", error);
+		return null;
+	}
 };
 
 async function directions(req, res) {
@@ -124,11 +129,7 @@ async function directions(req, res) {
 	while (tryAgain) {
 		const data = { coordinates, options };
 
-		try {
-			theJson = await fetchDirections(result.mode, data);
-		} catch (error) {
-			console.log("Error fetching directions from OpenRouteService:", error);
-		}
+		theJson = await fetchDirections(result.mode, data);
 
 		console.log(api_root);
 		console.log(JSON.stringify(data));
