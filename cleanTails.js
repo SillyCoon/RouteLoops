@@ -1,6 +1,6 @@
 import { LatLngDist } from "./directions.js";
 
-async function cleanTails(req, res, next) {
+async function cleanTails(req, res) {
 	const method = req.method;
 	if (method.toLowerCase() === "post") {
 		const body = req.body;

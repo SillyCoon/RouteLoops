@@ -15,9 +15,10 @@ function LatLngDist(lat1, lon1, lat2, lon2) {
 	return R * c;
 }
 
-async function directions(req, res, next) {
+async function directions(req, res) {
 	const method = req.method;
 	const url = req.url;
+	var theJson = null;
 
 	if (method.toLowerCase() === "get") {
 		const split1 = url.split("?");
@@ -109,7 +110,7 @@ async function directions(req, res, next) {
 					body: JSON.stringify(data),
 					headers: ApiHeaders,
 				});
-				var theJson = await response.json();
+				theJson = await response.json();
 			} catch (error) {
 				console.log("Error fetching directions from OpenRouteService:", error);
 			}
@@ -117,7 +118,7 @@ async function directions(req, res, next) {
 			console.log(api_root);
 			console.log(JSON.stringify(data));
 
-			if (theJson && theJson.hasOwnProperty("error")) {
+			if (theJson?.hasOwnProperty("error")) {
 				if (
 					theJson.error.message.indexOf("Could not find routable point") >= 0
 				) {
