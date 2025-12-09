@@ -1,7 +1,32 @@
 // Extracted without refactor from serverCodeOsm.js
 // Provides getRLpoints, circleRoute, rectangleRoute, fig8Route
+// Named constants to eliminate magic numbers and clarify intent
 
-export async function getRLpoints(req, res, next) {
+// Distance conversion
+const INCHES_PER_FOOT = 12;
+const CENTIMETERS_PER_INCH = 2.54;
+const METERS_PER_CENTIMETER = 0.01;
+const FEET_PER_MILE = 5280;
+const METERS_PER_KILOMETER = 1000;
+
+// Geographic approximations
+// Mean meters per degree latitude (approx.)
+const METERS_PER_DEGREE_LAT = 110540;
+// Mean meters per degree longitude at equator; scaled by cos(latitude)
+const METERS_PER_DEGREE_LNG_EQUATOR = 111320;
+
+// Circle/figure-8 generation parameters
+const DEFAULT_CIRCLE_POINTS = 4; // points around circle for circular route
+const FIG8_CIRCLE_POINTS = 3; // points per lobe in figure-8
+
+// Rectangle generation parameters
+const RECT_MAX_RATIO = 5; // max height:width ratio
+const RECT_MIN_RATIO = 1 / RECT_MAX_RATIO; // min height:width ratio
+
+// Heading sectors (radians) relative to east=0 using original fractional definitions
+// Note: Precomputed angle fractions kept for clarity but not directly used
+
+export async function getRLpoints(req, res) {
 	const method = req.method;
 	const url = req.url;
 	if (method.toLowerCase() === "get") {
@@ -24,8 +49,14 @@ export async function getRLpoints(req, res, next) {
 
 		let units = result.units;
 		if (units == null) units = "imperial";
-		if (units === "imperial") targetLengthInMeters *= (5280 * 12 * 2.54) / 100;
-		if (units === "metric") targetLengthInMeters *= 1000;
+		// Imperial: miles->feet->inches->cm->meters
+		if (units === "imperial") {
+			const INCHES_PER_MILE = FEET_PER_MILE * INCHES_PER_FOOT;
+			const METERS_PER_MILE =
+				INCHES_PER_MILE * CENTIMETERS_PER_INCH * METERS_PER_CENTIMETER;
+			targetLengthInMeters *= METERS_PER_MILE;
+		}
+		if (units === "metric") targetLengthInMeters *= METERS_PER_KILOMETER;
 
 		let direction = result.direction;
 		if (direction == null) direction = 0;
@@ -60,8 +91,8 @@ export async function getRLpoints(req, res, next) {
 }
 
 function circleRoute(BaseLocation, length, travelHeading, rotation) {
-	const radius = length / 2 / Math.PI;
-	const circlePoints = 4;
+	const radius = length / (2 * Math.PI);
+	const circlePoints = DEFAULT_CIRCLE_POINTS;
 	const deg = [];
 	const rlPoints = [];
 
@@ -87,8 +118,11 @@ function circleRoute(BaseLocation, length, travelHeading, rotation) {
 
 	let dx = radius * Math.cos(direction);
 	let dy = radius * Math.sin(direction);
-	let delta_lat = dy / 110540;
-	let delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	let delta_lat = dy / METERS_PER_DEGREE_LAT;
+	let delta_lng =
+		dx /
+		(METERS_PER_DEGREE_LNG_EQUATOR *
+			Math.cos((BaseLocation.lat * Math.PI) / 180));
 	const center = {
 		lat: BaseLocation.lat + delta_lat,
 		lng: BaseLocation.lng + delta_lng,
@@ -103,8 +137,10 @@ function circleRoute(BaseLocation, length, travelHeading, rotation) {
 		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
 		dx = radius * Math.cos(deg[i]);
 		dy = radius * Math.sin(deg[i]);
-		delta_lat = dy / 110540;
-		delta_lng = dx / (111320 * Math.cos((center.lat * Math.PI) / 180));
+		delta_lat = dy / METERS_PER_DEGREE_LAT;
+		delta_lng =
+			dx /
+			(METERS_PER_DEGREE_LNG_EQUATOR * Math.cos((center.lat * Math.PI) / 180));
 		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
 	}
 
@@ -116,8 +152,8 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 	let angle = 0;
 	const rlPoints = [];
 
-	const maxRatio = 5;
-	const minRatio = 1 / maxRatio;
+	const maxRatio = RECT_MAX_RATIO; // explanatory alias
+	const minRatio = RECT_MIN_RATIO; // explanatory alias
 	const deltaRatio = maxRatio - minRatio;
 	const ratio = Math.random() * deltaRatio + minRatio;
 	const width = length / (2 * ratio + 2);
@@ -151,8 +187,11 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 	angle = 0 + direction; // height direction
 	let dx = height * Math.cos(angle);
 	let dy = height * Math.sin(angle);
-	let delta_lat = dy / 110540;
-	let delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	let delta_lat = dy / METERS_PER_DEGREE_LAT;
+	let delta_lng =
+		dx /
+		(METERS_PER_DEGREE_LNG_EQUATOR *
+			Math.cos((BaseLocation.lat * Math.PI) / 180));
 	rlPoints.push({
 		lat: BaseLocation.lat + delta_lat,
 		lng: BaseLocation.lng + delta_lng,
@@ -161,8 +200,11 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 	angle = sign * theta + direction; // diagonal direction
 	dx = diagonal * Math.cos(angle);
 	dy = diagonal * Math.sin(angle);
-	delta_lat = dy / 110540;
-	delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	delta_lat = dy / METERS_PER_DEGREE_LAT;
+	delta_lng =
+		dx /
+		(METERS_PER_DEGREE_LNG_EQUATOR *
+			Math.cos((BaseLocation.lat * Math.PI) / 180));
 	rlPoints.push({
 		lat: BaseLocation.lat + delta_lat,
 		lng: BaseLocation.lng + delta_lng,
@@ -171,8 +213,11 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 	angle = (sign * Math.PI) / 2 + direction; // width direction
 	dx = width * Math.cos(angle);
 	dy = width * Math.sin(angle);
-	delta_lat = dy / 110540;
-	delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	delta_lat = dy / METERS_PER_DEGREE_LAT;
+	delta_lng =
+		dx /
+		(METERS_PER_DEGREE_LNG_EQUATOR *
+			Math.cos((BaseLocation.lat * Math.PI) / 180));
 	rlPoints.push({
 		lat: BaseLocation.lat + delta_lat,
 		lng: BaseLocation.lng + delta_lng,
@@ -182,8 +227,8 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 }
 
 function fig8Route(BaseLocation, length, travelHeading, rotation) {
-	const radius = length / 4 / Math.PI;
-	const circlePoints = 3;
+	const radius = length / (4 * Math.PI);
+	const circlePoints = FIG8_CIRCLE_POINTS;
 	const deg = [];
 	const rlPoints = [];
 
@@ -209,8 +254,11 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 
 	let dx = radius * Math.cos(direction);
 	let dy = radius * Math.sin(direction);
-	let delta_lat = dy / 110540;
-	let delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	let delta_lat = dy / METERS_PER_DEGREE_LAT;
+	let delta_lng =
+		dx /
+		(METERS_PER_DEGREE_LNG_EQUATOR *
+			Math.cos((BaseLocation.lat * Math.PI) / 180));
 	let center = {
 		lat: BaseLocation.lat + delta_lat,
 		lng: BaseLocation.lng + delta_lng,
@@ -225,8 +273,10 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
 		dx = radius * Math.cos(deg[i]);
 		dy = radius * Math.sin(deg[i]);
-		delta_lat = dy / 110540;
-		delta_lng = dx / (111320 * Math.cos((center.lat * Math.PI) / 180));
+		delta_lat = dy / METERS_PER_DEGREE_LAT;
+		delta_lng =
+			dx /
+			(METERS_PER_DEGREE_LNG_EQUATOR * Math.cos((center.lat * Math.PI) / 180));
 		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
 	}
 
@@ -234,8 +284,11 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 
 	dx = radius * Math.cos(direction);
 	dy = radius * Math.sin(direction);
-	delta_lat = dy / 110540;
-	delta_lng = dx / (111320 * Math.cos((BaseLocation.lat * Math.PI) / 180));
+	delta_lat = dy / METERS_PER_DEGREE_LAT;
+	delta_lng =
+		dx /
+		(METERS_PER_DEGREE_LNG_EQUATOR *
+			Math.cos((BaseLocation.lat * Math.PI) / 180));
 	center = {
 		lat: BaseLocation.lat + delta_lat,
 		lng: BaseLocation.lng + delta_lng,
@@ -251,8 +304,10 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
 		dx = radius * Math.cos(deg[i]);
 		dy = radius * Math.sin(deg[i]);
-		delta_lat = dy / 110540;
-		delta_lng = dx / (111320 * Math.cos((center.lat * Math.PI) / 180));
+		delta_lat = dy / METERS_PER_DEGREE_LAT;
+		delta_lng =
+			dx /
+			(METERS_PER_DEGREE_LNG_EQUATOR * Math.cos((center.lat * Math.PI) / 180));
 		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
 	}
 
