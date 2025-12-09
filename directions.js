@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 // Shared helper to compute distance between two lat/lng points in km.
 function LatLngDist(lat1, lon1, lat2, lon2) {
 	const R = 6371; // km
@@ -94,6 +92,23 @@ export function buildOptions(result) {
 	return options;
 }
 
+const fetchDirections = async (mode, data) => {
+	const response = await fetch(
+		`https://api.openrouteservice.org/v2/directions/${mode}/geojson`,
+		{
+			method: "POST",
+			body: JSON.stringify(data),
+			headers: {
+				Accept:
+					"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
+				Authorization: process.env.OSM_API_KEY,
+				"Content-Type": "application/json; charset=utf-8",
+			},
+		},
+	);
+	return response.json();
+};
+
 async function directions(req, res) {
 	const url = req.url;
 	let theJson = null;
@@ -101,15 +116,6 @@ async function directions(req, res) {
 	const result = parseQuery(url);
 	console.log("Doing a directions GET call:");
 
-	const api_root = `https://api.openrouteservice.org/v2/directions/${result.mode}/geojson`;
-	const key = process.env.OSM_API_KEY;
-
-	const ApiHeaders = {
-		Accept:
-			"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
-		Authorization: key,
-		"Content-Type": "application/json; charset=utf-8",
-	};
 	const coordinates = buildCoordinates(result);
 	const options = buildOptions(result);
 
@@ -119,12 +125,7 @@ async function directions(req, res) {
 		const data = { coordinates, options };
 
 		try {
-			const response = await fetch(api_root, {
-				method: "POST",
-				body: JSON.stringify(data),
-				headers: ApiHeaders,
-			});
-			theJson = await response.json();
+			theJson = await fetchDirections(result.mode, data);
 		} catch (error) {
 			console.log("Error fetching directions from OpenRouteService:", error);
 		}
