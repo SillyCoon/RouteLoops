@@ -16,7 +16,7 @@ function LatLngDist(lat1, lon1, lat2, lon2) {
 }
 
 // Helpers
-function parseQuery(url) {
+export function parseQuery(url) {
 	const result = {
 		lat: null,
 		lng: null,
@@ -45,7 +45,7 @@ function parseQuery(url) {
 	return result;
 }
 
-function buildCoordinates(result) {
+export function buildCoordinates(result) {
 	const coordinates = [];
 	if (result.lng != null && result.lat != null) {
 		coordinates.push([result.lng, result.lat]);
@@ -58,7 +58,11 @@ function buildCoordinates(result) {
 			if (parts.length === 2) {
 				const lat = parts[0];
 				const lng = parts[1];
-				coordinates.push([lng, lat]);
+				const latNum = Number(lat);
+				const lngNum = Number(lng);
+				if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
+					coordinates.push([lng, lat]);
+				}
 			}
 		}
 	}
@@ -68,7 +72,7 @@ function buildCoordinates(result) {
 	return coordinates;
 }
 
-function buildOptions(result) {
+export function buildOptions(result) {
 	const options = { avoid_features: [], profile_params: { weightings: {} } };
 	const mode = result.mode ?? "cycling-regular";
 	const isDriving = mode.indexOf("driv") >= 0;
