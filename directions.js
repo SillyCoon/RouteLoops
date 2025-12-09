@@ -1,21 +1,19 @@
 // Shared helper to compute distance between two lat/lng points in km.
 function LatLngDist(lat1, lon1, lat2, lon2) {
 	const R = 6371; // km
-	const dLat = ((lat2 - lat1) * Math.PI) / 180;
-	const dLon = ((lon2 - lon1) * Math.PI) / 180;
+	const toRad = (deg) => (deg * Math.PI) / 180;
+	const dLat = toRad(lat2 - lat1);
+	const dLon = toRad(lon2 - lon1);
 	const a =
-		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos((lat1 * Math.PI) / 180) *
-			Math.cos((lat2 * Math.PI) / 180) *
-			Math.sin(dLon / 2) *
-			Math.sin(dLon / 2);
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 	return R * c;
 }
 
 // Helpers
 export function parseQuery(url) {
-	const result = {
+	const defaults = {
 		lat: null,
 		lng: null,
 		highways: "no",
@@ -27,86 +25,64 @@ export function parseQuery(url) {
 		quietFactor: 0,
 	};
 	const qIndex = url.indexOf("?");
-	if (qIndex >= 0) {
-		const search = url.slice(qIndex + 1);
-		const params = new URLSearchParams(search);
-		result.lat = params.get("lat") ?? result.lat;
-		result.lng = params.get("lng") ?? result.lng;
-		result.highways = params.get("highways") ?? result.highways;
-		result.ferries = params.get("ferries") ?? result.ferries;
-		result.waypoints = params.get("waypoints") ?? result.waypoints;
-		result.mode = params.get("mode") ?? result.mode;
-		result.fitnessLevel = params.get("fitnessLevel") ?? result.fitnessLevel;
-		result.greenFactor = params.get("greenFactor") ?? result.greenFactor;
-		result.quietFactor = params.get("quietFactor") ?? result.quietFactor;
-	}
-	return result;
+	if (qIndex < 0) return defaults;
+	const params = new URLSearchParams(url.slice(qIndex + 1));
+	const entries = Object.fromEntries(params.entries());
+	return { ...defaults, ...entries };
 }
 
 export function buildCoordinates(result) {
-	const coordinates = [];
-	if (result.lng != null && result.lat != null) {
-		coordinates.push([result.lng, result.lat]);
-	}
-	const wptsText = result.waypoints ?? "";
-	if (wptsText.length > 0) {
-		const theWayPoints = wptsText.split("|");
-		for (const wp of theWayPoints) {
-			const parts = wp.split(",");
-			if (parts.length === 2) {
-				const lat = parts[0];
-				const lng = parts[1];
-				const latNum = Number(lat);
-				const lngNum = Number(lng);
-				if (Number.isFinite(latNum) && Number.isFinite(lngNum)) {
-					coordinates.push([lng, lat]);
-				}
-			}
-		}
-	}
-	if (result.lng != null && result.lat != null) {
-		coordinates.push([result.lng, result.lat]);
-	}
-	return coordinates;
+	const start =
+		result.lng != null && result.lat != null ? [[result.lng, result.lat]] : [];
+	const waypoints = (result.waypoints ?? "")
+		.split("|")
+		.map((wp) => wp.split(","))
+		.filter((parts) => parts.length === 2)
+		.map(([lat, lng]) => [lng, lat])
+		.filter(
+			([lng, lat]) =>
+				Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)),
+		);
+	const end =
+		result.lng != null && result.lat != null ? [[result.lng, result.lat]] : [];
+	return [...start, ...waypoints, ...end];
 }
 
 export function buildOptions(result) {
-	const options = { avoid_features: [], profile_params: { weightings: {} } };
 	const mode = result.mode ?? "cycling-regular";
-	const isDriving = mode.indexOf("driv") >= 0;
-	const isCycling = mode.indexOf("cycl") >= 0;
-	const isFoot = mode.indexOf("foot") >= 0;
-
-	const tolls = result.highways === "yes" ? "yes" : "no"; // original behavior
-	if (isDriving && tolls === "yes") options.avoid_features.push("tollways");
+	const isDriving = mode.includes("driv");
+	const isCycling = mode.includes("cycl");
+	const isFoot = mode.includes("foot");
+	const avoid_features = [];
+	const tolls = result.highways === "yes" ? "yes" : "no";
+	if (isDriving && tolls === "yes") avoid_features.push("tollways");
 	if ((isDriving || isCycling || isFoot) && result.ferries === "yes")
-		options.avoid_features.push("ferries");
-	if (isDriving && result.highways === "yes")
-		options.avoid_features.push("highways");
+		avoid_features.push("ferries");
+	if (isDriving && result.highways === "yes") avoid_features.push("highways");
 
-	options.profile_params.weightings.steepness_difficulty =
-		1 * result.fitnessLevel;
-	options.profile_params.weightings.green = 1 * result.greenFactor;
-	options.profile_params.weightings.quiet = 1 * result.quietFactor;
-
-	return options;
+	const profile_params = {
+		weightings: {
+			steepness_difficulty: Number(result.fitnessLevel) * 1,
+			green: Number(result.greenFactor) * 1,
+			quiet: Number(result.quietFactor) * 1,
+		},
+	};
+	return { avoid_features, profile_params };
 }
 
 const fetchDirections = async (mode, data) => {
+	const apiRoot = `https://api.openrouteservice.org/v2/directions/${mode}/geojson`;
 	try {
-		const response = await fetch(
-			`https://api.openrouteservice.org/v2/directions/${mode}/geojson`,
-			{
-				method: "POST",
-				body: JSON.stringify(data),
-				headers: {
-					Accept:
-						"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
-					Authorization: process.env.OSM_API_KEY,
-					"Content-Type": "application/json; charset=utf-8",
-				},
+		const response = await fetch(apiRoot, {
+			method: "POST",
+			body: JSON.stringify(data),
+			headers: {
+				Accept:
+					"application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8",
+				Authorization: process.env.OSM_API_KEY,
+				"Content-Type": "application/json; charset=utf-8",
 			},
-		);
+		});
 		return response.json();
 	} catch (error) {
 		console.log("Error in fetchDirections:", error);
@@ -115,7 +91,7 @@ const fetchDirections = async (mode, data) => {
 };
 
 async function directions(req, res) {
-	const url = req.url;
+	const { url } = req;
 	let theJson = null;
 
 	const result = parseQuery(url);
@@ -130,8 +106,6 @@ async function directions(req, res) {
 		const data = { coordinates, options };
 
 		theJson = await fetchDirections(result.mode, data);
-
-		console.log(api_root);
 		console.log(JSON.stringify(data));
 
 		if (theJson && "error" in theJson) {
@@ -160,10 +134,9 @@ async function directions(req, res) {
 
 	if (directionsError == null) {
 		for (const feature of theJson.features) {
-			const allPoints = [];
-			for (const coordinate of feature.geometry.coordinates ?? []) {
-				allPoints.push({ lat: coordinate[1], lng: coordinate[0] });
-			}
+			const allPoints = (feature.geometry.coordinates ?? []).map(
+				([lng, lat]) => ({ lat, lng }),
+			);
 			for (let a = allPoints.length - 1; a >= 1; a--) {
 				if (
 					allPoints[a].lat === allPoints[a - 1].lat &&
@@ -175,11 +148,13 @@ async function directions(req, res) {
 			let cumulativeDistance = 0;
 			allPoints[0].cumulativeDistanceKm = 0;
 			for (let a = 1; a < allPoints.length; a++) {
+				const prev = allPoints[a - 1];
+				const curr = allPoints[a];
 				cumulativeDistance += LatLngDist(
-					allPoints[a - 1].lat,
-					allPoints[a - 1].lng,
-					allPoints[a].lat,
-					allPoints[a].lng,
+					prev.lat,
+					prev.lng,
+					curr.lat,
+					curr.lng,
 				);
 				allPoints[a].cumulativeDistanceKm = cumulativeDistance;
 			}
@@ -200,13 +175,10 @@ async function directions(req, res) {
 				let distanceToNext = 0;
 				let b;
 				for (b = a + 1; b < allPoints.length; b++) {
-					distanceToNext += LatLngDist(
-						allPoints[b - 1].lat,
-						allPoints[b - 1].lng,
-						allPoints[b].lat,
-						allPoints[b].lng,
-					);
-					if ("instructions" in allPoints[b]) break;
+					const prev = allPoints[b - 1];
+					const curr = allPoints[b];
+					distanceToNext += LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng);
+					if ("instructions" in curr) break;
 				}
 				allPoints[a].distanceToNextKm = distanceToNext;
 				allPoints[a].nextInstructionAt = b;
