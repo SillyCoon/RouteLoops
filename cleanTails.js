@@ -1,85 +1,92 @@
 import { LatLngDist } from "./directions.js";
 
-async function cleanTails(req, res) {
-	const method = req.method;
-	if (method.toLowerCase() === "post") {
-		const body = req.body;
-		const routeLatLng = body.LLs;
-
-		const pLpoints = [];
-		for (let i = 0; i < routeLatLng.length; i++)
-			pLpoints.push({ lat: routeLatLng[i].lat, lng: routeLatLng[i].lng });
-
-		const pLdist = [];
-		pLdist.push(0);
-		let cumulative = 0;
-		const newPath = [];
-		const pLuse = [];
-		for (let i = 0; i < pLpoints.length - 1; i++) {
-			pLuse.push(false);
-			cumulative += LatLngDist(
-				pLpoints[i].lat,
-				pLpoints[i].lng,
-				pLpoints[i + 1].lat,
-				pLpoints[i + 1].lng,
-			);
-			pLdist.push(cumulative);
-			newPath.push(pLpoints[i]);
-		}
-		newPath.push(pLpoints[pLpoints.length - 1]);
-
-		let closest;
-		let point;
-		let dist;
-		const pLclose = [];
-		const pLsep = [];
-		for (let i = 0; i < pLpoints.length; i++) {
-			const thisOne = pLpoints[i];
-			for (let j = i + 1; j < pLpoints.length; j++) {
-				const thatOne = pLpoints[j];
-				dist = LatLngDist(thisOne.lat, thisOne.lng, thatOne.lat, thatOne.lng);
-				if (j === i + 1) {
-					closest = dist;
-					point = j;
-				} else if (dist < closest) {
-					closest = dist;
-					point = j;
-				}
-			}
-			pLclose[i] = point;
-			pLsep[i] = closest;
-		}
-
-		let tailSize;
-		for (let i = 0; i < pLpoints.length; i++) {
-			pLuse[i] = true;
-			if (pLclose[i] - i !== 1) {
-				tailSize = (pLdist[pLclose[i]] - pLdist[i]) / cumulative;
-				if (tailSize < 0.2) {
-					i = pLclose[i];
-				}
-			}
-		}
-
-		newPath.length = 0;
-		for (let i = 0; i < pLpoints.length; i++) {
-			if (i === 0 || i === pLpoints.length - 1) pLuse[i] = true;
-			if (pLuse[i]) newPath.push(pLpoints[i]);
-		}
-
-		const cleanedUp = pLpoints.length - newPath.length;
-
-		let finalDistance = 0;
-		for (let i = 1; i < newPath.length; i++)
-			finalDistance += LatLngDist(
-				newPath[i - 1].lat,
-				newPath[i - 1].lng,
-				newPath[i].lat,
-				newPath[i].lng,
-			);
-
-		res.json({ newPath: newPath, cleanedUp: cleanedUp, distKm: finalDistance });
+// Compute cumulative distances along a path of lat/lng points.
+const cumulativeDistances = (points) => {
+	const dists = [0];
+	let cum = 0;
+	for (let i = 0; i < points.length - 1; i++) {
+		const a = points[i];
+		const b = points[i + 1];
+		cum += LatLngDist(a.lat, a.lng, b.lat, b.lng);
+		dists.push(cum);
 	}
+	return { dists, total: cum };
+};
+
+// For each point i, find the closest subsequent point j>i by distance.
+const closestForwardPoints = (points) => {
+	const closestIndex = new Array(points.length).fill(null);
+	const separation = new Array(points.length).fill(Infinity);
+	for (let i = 0; i < points.length; i++) {
+		const a = points[i];
+		for (let j = i + 1; j < points.length; j++) {
+			const b = points[j];
+			const d = LatLngDist(a.lat, a.lng, b.lat, b.lng);
+			if (d < separation[i]) {
+				separation[i] = d;
+				closestIndex[i] = j;
+			}
+		}
+	}
+	return { closestIndex, separation };
+};
+
+// Decide which points to keep, skipping short tails (<20% of total length).
+const decideUsage = (points, dists, total, closestIndex) => {
+	const use = new Array(points.length).fill(true);
+	for (let i = 0; i < points.length; i++) {
+		const j = closestIndex[i];
+		if (j == null) continue;
+		if (j - i !== 1) {
+			const tailSize = (dists[j] - dists[i]) / (total || 1);
+			if (tailSize < 0.2) {
+				// skip ahead to the closest point
+				i = j;
+			}
+		}
+	}
+	// Always keep endpoints
+	if (points.length > 0) {
+		use[0] = true;
+		use[points.length - 1] = true;
+	}
+	return use;
+};
+
+// Build a new path from points to keep.
+const buildPath = (points, use) => points.filter((_, idx) => use[idx]);
+
+// Compute total distance of a path.
+const pathDistance = (path) => {
+	let dist = 0;
+	for (let i = 1; i < path.length; i++) {
+		dist += LatLngDist(
+			path[i - 1].lat,
+			path[i - 1].lng,
+			path[i].lat,
+			path[i].lng,
+		);
+	}
+	return dist;
+};
+
+async function cleanTails(req, res) {
+	const routeLatLng = req.body?.LLs ?? [];
+	if (!Array.isArray(routeLatLng) || routeLatLng.length < 2) {
+		return res.json({ newPath: routeLatLng, cleanedUp: 0, distKm: 0 });
+	}
+
+	const points = routeLatLng.map(({ lat, lng }) => ({ lat, lng }));
+
+	const { dists, total } = cumulativeDistances(points);
+	const { closestIndex } = closestForwardPoints(points);
+	const use = decideUsage(points, dists, total, closestIndex);
+	const newPath = buildPath(points, use);
+
+	const cleanedUp = points.length - newPath.length;
+	const finalDistance = pathDistance(newPath);
+
+	res.json({ newPath, cleanedUp, distKm: finalDistance });
 }
 
 export { cleanTails };
