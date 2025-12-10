@@ -57,10 +57,12 @@ const decideUsage = (points, dists, total, closestIndex) => {
 	return use;
 };
 
-// Build a new path from points to keep.
 const buildPath = (points, use) => points.filter((_, idx) => use[idx]);
 
-// Compute total distance of a path.
+/**
+ * @param {Array<{lat: number, lng: number}>} path
+ * @returns {number} The total distance of the path.
+ */
 const pathDistance = (path) => {
 	let dist = 0;
 	for (let i = 1; i < path.length; i++) {
@@ -74,6 +76,10 @@ const pathDistance = (path) => {
 	return dist;
 };
 
+/**
+ *
+ * @param {{lat: number, lng: number}[]} routeLatLng
+ */
 async function cleanTails(routeLatLng) {
 	console.log("Cleaning tails for route with", routeLatLng.length, "points");
 	if (!Array.isArray(routeLatLng) || routeLatLng.length < 2) {
@@ -85,17 +91,20 @@ async function cleanTails(routeLatLng) {
 	const { dists, total } = cumulativeDistances(points);
 	const { closestIndex } = closestForwardPoints(points);
 	const use = decideUsage(points, dists, total, closestIndex);
-	
 	// Count removed points for logging
-	const removedCount = use.filter(u => !u).length;
-	console.log(`Tail analysis: ${removedCount} points marked for removal out of ${routeLatLng.length} total points`);
-	
+	const removedCount = use.filter((u) => !u).length;
+	console.log(
+		`Tail analysis: ${removedCount} points marked for removal out of ${routeLatLng.length} total points`,
+	);
+
 	const newPath = buildPath(points, use);
 
 	const cleanedUp = points.length - newPath.length;
 	const finalDistance = pathDistance(newPath);
-	
-	console.log(`cleanTails trimmed ${cleanedUp} from ${routeLatLng.length} for ${finalDistance.toFixed(2)}km`);
+
+	console.log(
+		`cleanTails trimmed ${cleanedUp} from ${routeLatLng.length} for ${finalDistance.toFixed(2)}km`,
+	);
 
 	return { newPath, cleanedUp, distKm: finalDistance };
 }
