@@ -90,11 +90,9 @@ const fetchDirections = async (mode, data) => {
 	}
 };
 
-async function directions(req, res) {
-	const { url } = req;
+async function directions(result) {
 	let theJson = null;
 
-	const result = parseQuery(url);
 	console.log("Doing a directions GET call:");
 
 	const coordinates = buildCoordinates(result);
@@ -188,9 +186,9 @@ async function directions(req, res) {
 			feature.allPoints = allPoints;
 		}
 
-		res.json(theJson);
+		return theJson;
 	} else {
-		res.json({ status: "NG", error: directionsError });
+		return { status: "NG", error: directionsError };
 	}
 }
 

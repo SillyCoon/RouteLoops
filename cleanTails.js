@@ -70,10 +70,10 @@ const pathDistance = (path) => {
 	return dist;
 };
 
-async function cleanTails(req, res) {
-	const routeLatLng = req.body?.LLs ?? [];
+async function cleanTails(routeLatLng) {
+	console.log("Cleaning tails for route with", routeLatLng.length, "points");
 	if (!Array.isArray(routeLatLng) || routeLatLng.length < 2) {
-		return res.json({ newPath: routeLatLng, cleanedUp: 0, distKm: 0 });
+		return { newPath: routeLatLng, cleanedUp: 0, distKm: 0 };
 	}
 
 	const points = routeLatLng.map(({ lat, lng }) => ({ lat, lng }));
@@ -86,7 +86,7 @@ async function cleanTails(req, res) {
 	const cleanedUp = points.length - newPath.length;
 	const finalDistance = pathDistance(newPath);
 
-	res.json({ newPath, cleanedUp, distKm: finalDistance });
+	return { newPath, cleanedUp, distKm: finalDistance };
 }
 
 export { cleanTails };

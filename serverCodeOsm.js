@@ -8,18 +8,24 @@ import { getRLpoints } from "./rlpoints.js";
 import dotenv from "dotenv";
 dotenv.config();
 
+import { parseQuery as parseRLQuery } from "./rlpoints.js";
+import { parseQuery as parseDirectionsQuery } from "./directions.js";
+
 var app = express();
 app.use(cors());
 app.use(express.static("./"));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-app.get("/directions", directions);
-app.post("/directions", directions);
-app.get("/getRLpoints", getRLpoints);
-app.post("/getRLpoints", getRLpoints);
-app.get("/cleanTails", cleanTails);
-app.post("/cleanTails", cleanTails);
+app.get("/directions", (req, res) =>
+	directions(parseDirectionsQuery(req.url)).then((data) => res.json(data)),
+);
+app.get("/getRLpoints", (req, res) =>
+	getRLpoints(parseRLQuery(req.url)).then((data) => res.json(data)),
+);
+app.post("/cleanTails", (req, res) =>
+	cleanTails(req.body?.LLs ?? []).then((data) => res.json(data)),
+);
 app.post("/showDirections", showDirections);
 app.post("/makeSparseGPX", makeSparseGPX);
 app.post("/makeDenseGPX", makeDenseGPX);

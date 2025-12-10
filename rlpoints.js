@@ -26,68 +26,63 @@ const RECT_MIN_RATIO = 1 / RECT_MAX_RATIO; // min height:width ratio
 // Heading sectors (radians) relative to east=0 using original fractional definitions
 // Note: Precomputed angle fractions kept for clarity but not directly used
 
-export async function getRLpoints(req, res) {
-	const method = req.method;
-	const url = req.url;
-	if (method.toLowerCase() === "get") {
-		const qsIndex = url.indexOf("?");
-		const search = qsIndex >= 0 ? url.slice(qsIndex + 1) : "";
-		const params = new URLSearchParams(search);
-		const result = {
-			lat: params.get("lat"),
-			lng: params.get("lng"),
-			dist: params.get("dist"),
-			units: params.get("units"),
-			method: params.get("method"),
-			direction: params.get("direction"),
-			rotation: params.get("rotation"),
-		};
+export const parseQuery = (url) => {
+	const params = new URLSearchParams(url.split("?")[1]);
+	return {
+		lat: params.get("lat"),
+		lng: params.get("lng"),
+		dist: params.get("dist"),
+		units: params.get("units"),
+		method: params.get("method"),
+		direction: params.get("direction"),
+		rotation: params.get("rotation"),
+	};
+};
 
-		const LatLng = { lat: 1 * result.lat, lng: 1 * result.lng };
+export async function getRLpoints(result) {
+	const LatLng = { lat: 1 * result.lat, lng: 1 * result.lng };
 
-		let targetLengthInMeters = result.dist;
+	let targetLengthInMeters = result.dist;
 
-		let units = result.units;
-		if (units == null) units = "imperial";
-		// Imperial: miles->feet->inches->cm->meters
-		if (units === "imperial") {
-			const INCHES_PER_MILE = FEET_PER_MILE * INCHES_PER_FOOT;
-			const METERS_PER_MILE =
-				INCHES_PER_MILE * CENTIMETERS_PER_INCH * METERS_PER_CENTIMETER;
-			targetLengthInMeters *= METERS_PER_MILE;
-		}
-		if (units === "metric") targetLengthInMeters *= METERS_PER_KILOMETER;
-
-		let direction = result.direction;
-		if (direction == null) direction = 0;
-
-		let rotation = result.rotation;
-		if (rotation == null) rotation = "clockwise";
-
-		let pickMethod = result.method;
-
-		if (pickMethod === "random" || pickMethod == null) {
-			const methods = ["circular", "rectangular", "figure8"];
-			pickMethod = methods[Math.floor(Math.random() * methods.length)];
-		}
-
-		console.log(`picMethod of ${pickMethod} in direction ${direction} `);
-		let rlPoints = [];
-		if (pickMethod === "circular")
-			rlPoints = circleRoute(LatLng, targetLengthInMeters, direction, rotation);
-		if (pickMethod === "rectangular")
-			rlPoints = rectangleRoute(
-				LatLng,
-				targetLengthInMeters,
-				direction,
-				rotation,
-			);
-		if (pickMethod === "figure8")
-			rlPoints = fig8Route(LatLng, targetLengthInMeters, direction, rotation);
-
-		res.json(rlPoints);
-	} else if (method.toLowerCase() === "post") {
+	let units = result.units;
+	if (units == null) units = "imperial";
+	// Imperial: miles->feet->inches->cm->meters
+	if (units === "imperial") {
+		const INCHES_PER_MILE = FEET_PER_MILE * INCHES_PER_FOOT;
+		const METERS_PER_MILE =
+			INCHES_PER_MILE * CENTIMETERS_PER_INCH * METERS_PER_CENTIMETER;
+		targetLengthInMeters *= METERS_PER_MILE;
 	}
+	if (units === "metric") targetLengthInMeters *= METERS_PER_KILOMETER;
+
+	let direction = result.direction;
+	if (direction == null) direction = 0;
+
+	let rotation = result.rotation;
+	if (rotation == null) rotation = "clockwise";
+
+	let pickMethod = result.method;
+
+	if (pickMethod === "random" || pickMethod == null) {
+		const methods = ["circular", "rectangular", "figure8"];
+		pickMethod = methods[Math.floor(Math.random() * methods.length)];
+	}
+
+	console.log(`picMethod of ${pickMethod} in direction ${direction} `);
+	let rlPoints = [];
+	if (pickMethod === "circular")
+		rlPoints = circleRoute(LatLng, targetLengthInMeters, direction, rotation);
+	if (pickMethod === "rectangular")
+		rlPoints = rectangleRoute(
+			LatLng,
+			targetLengthInMeters,
+			direction,
+			rotation,
+		);
+	if (pickMethod === "figure8")
+		rlPoints = fig8Route(LatLng, targetLengthInMeters, direction, rotation);
+
+	return rlPoints;
 }
 
 function circleRoute(BaseLocation, length, travelHeading, rotation) {
