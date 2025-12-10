@@ -59,15 +59,14 @@ const improvementIteration = async (
 	};
 };
 
-export const improvementCycle = async (
+export async function* improvementCycleGen(
 	rawPoints,
 	initialWaypoints,
 	directionsQuery,
-) => {
+) {
 	let finalPoints = [...rawPoints];
 	let waypoints = [...initialWaypoints];
 	let lastCounts = { cleaned: -1, total: -1 };
-	let distance = rawPoints[rawPoints.length - 1].cumulativeDistanceKm;
 	let keepGoing = true;
 	let countCalcs = 0;
 
@@ -80,12 +79,53 @@ export const improvementCycle = async (
 			directionsQuery,
 		);
 
+		// Yield intermediate state to the consumer
+		yield {
+			iteration: countCalcs,
+			distance: iterationResult.distance,
+			cleanedUp: iterationResult.lastCounts.cleaned,
+			totalPoints: iterationResult.lastCounts.total,
+			waypoints: iterationResult.waypoints,
+			points: iterationResult.allPoints,
+			keepGoing: iterationResult.keepGoing,
+		};
+
+		// Update loop state
 		lastCounts = iterationResult.lastCounts;
 		waypoints = iterationResult.waypoints;
 		keepGoing = iterationResult.keepGoing;
 		distance = iterationResult.distance;
 		finalPoints = iterationResult.allPoints;
 	}
+}
 
-	return { cleanPoints: finalPoints, waypoints, distance, countCalcs };
+// Backward-compatible helper that consumes the generator and returns final result
+export const improvementCycle = async (
+	rawPoints,
+	initialWaypoints,
+	directionsQuery,
+) => {
+	let lastStep = null;
+	// Use for-await to consume the async generator and capture the final step
+	for await (const step of improvementCycleGen(
+		rawPoints,
+		initialWaypoints,
+		directionsQuery,
+	)) {
+		lastStep = step;
+	}
+
+	return lastStep
+		? {
+				cleanPoints: lastStep.points,
+				waypoints: lastStep.waypoints,
+				distance: lastStep.distance,
+				countCalcs: lastStep.iteration,
+			}
+		: {
+				cleanPoints: rawPoints,
+				waypoints: initialWaypoints,
+				distance: rawPoints[rawPoints.length - 1]?.cumulativeDistanceKm ?? 0,
+				countCalcs: 0,
+			};
 };
