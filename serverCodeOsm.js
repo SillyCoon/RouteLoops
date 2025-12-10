@@ -1,9 +1,10 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { directions, parseQuery } from "./directions.js";
+import { directions } from "./directions.js";
 import { cleanTails } from "./cleanTails.js";
 import { getRLpoints } from "./rlpoints.js";
+import { cleanDirections } from "./cleanDirections.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -26,8 +27,11 @@ app.get("/getRLpoints", (req, res) =>
 app.post("/cleanTails", (req, res) =>
 	cleanTails(req.body?.LLs ?? []).then((data) => res.json(data)),
 );
+app.get("/cleanDirections", (req, res) =>
+	cleanDirections(parseDirectionsQuery(req.url)).then((data) => res.json(data)),
+);
 app.post("/cleanFull", (req, res) => {
-	const query = parseQuery(req.url);
+	const query = parseDirectionsQuery(req.url);
 	improvementCycle(req.body.allPoints, req.body.waypoints, query).then((data) =>
 		res.json(data),
 	);
