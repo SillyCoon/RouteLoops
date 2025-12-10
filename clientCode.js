@@ -131,6 +131,30 @@ const drawGuidePoints = (waypoints, waypointsIn) => {
 	if (!waypointsIn) map.fitBounds(RLBounds);
 };
 
+const cleanFull = async (allPoints, waypoints) => {
+	const theMode = document.getElementById("inputMode").value;
+	const inputHighways = document.getElementById("inputHighways").value;
+	const inputFerries = avoidFerries;
+	const fitnessLevel = document.getElementById("fitnessLevel").value;
+	const greenFactor = document.getElementById("greenFactor").value;
+	const quietFactor = document.getElementById("quietFactor").value;
+	let url = `${protocol}//${hostname}:${port}/cleanFull?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
+	url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
+	url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
+
+	console.log("Sending cleanFull request to server...");
+	console.log(allPoints, waypoints);
+	const resp = await fetch(url, {
+		method: "POST",
+		body: JSON.stringify({ allPoints, waypoints }),
+		headers: {
+			Accept: "application/json",
+			"Content-Type": "application/json",
+		},
+	});
+	return resp.json();
+};
+
 const getDirections = async (initialWaypoints) => {
 	//Call the directions service using the guide point as waypoints.
 	const theMode = document.getElementById("inputMode").value;
@@ -167,89 +191,6 @@ const cleanMap = () => {
 	} catch {}
 };
 
-const improvementIteration = async (allPoints, waypoints, prevLastCounts) => {
-	const cleanTailsJson = await fetchFromServer("cleanTails", {
-		LLs: allPoints,
-	});
-
-	console.log(
-		`Cleaned up ${cleanTailsJson.cleanedUp} points; new distance ${cleanTailsJson.distKm.toFixed(2)} km`,
-	);
-
-	if (cleanTailsJson.cleanedUp === 0) {
-		//No modifications were made, so stop
-		return {
-			keepGoing: false,
-			distance: cleanTailsJson.distKm,
-			lastCounts: {
-				cleaned: cleanTailsJson.cleanedUp,
-				total: allPoints.length,
-			},
-			waypoints,
-			allPoints,
-		};
-	}
-
-	// You modified the path, so redo with the cleaned path.
-	// FP-style: map each previous waypoint to closest point in newPath using reduce.
-	const newWaypoints = waypoints.map((waypoint) => {
-		const closest = cleanTailsJson.newPath.reduce((best, point) => {
-			const separation =
-				(waypoint.lat - point.lat) ** 2 + (waypoint.lng - point.lng) ** 2;
-			if (best == null || separation < best.separation) {
-				return { point, separation };
-			}
-			return best;
-		}, null);
-		return closest.point;
-	});
-
-	// Use the updated waypoint set for the next directions call
-	const directionsJson = await getDirections(newWaypoints);
-	const newPoints = directionsJson.features[0].allPoints;
-
-	return {
-		keepGoing: !(
-			cleanTailsJson.cleanedUp === prevLastCounts.cleaned &&
-			newPoints.length === prevLastCounts.total
-		),
-		distance: cleanTailsJson.distKm,
-		lastCounts: {
-			cleaned: cleanTailsJson.cleanedUp,
-			total: newPoints.length,
-		},
-		waypoints: newWaypoints,
-		allPoints: newPoints,
-	};
-};
-
-const improvementCycle = async (rawPoints, initialWaypoints) => {
-	let finalPoints = [...rawPoints];
-	let waypoints = [...initialWaypoints];
-	let lastCounts = { cleaned: -1, total: -1 };
-	let distance = rawPoints[rawPoints.length - 1].cumulativeDistanceKm;
-	let keepGoing = true;
-	let countCalcs = 0;
-
-	while (keepGoing) {
-		countCalcs += 1;
-		const iterationResult = await improvementIteration(
-			finalPoints,
-			waypoints,
-			lastCounts,
-		);
-		console.log("Iteration result", iterationResult);
-
-		lastCounts = iterationResult.lastCounts;
-		waypoints = iterationResult.waypoints;
-		keepGoing = iterationResult.keepGoing;
-		distance = iterationResult.distance;
-		finalPoints = iterationResult.allPoints;
-	}
-
-	return { cleanPoints: finalPoints, waypoints, distance, countCalcs };
-};
-
 const improveDirections = async (rawPoints, initialWaypoints) => {
 	//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
 	rawPath = new L.Polyline(rawPoints, {
@@ -261,7 +202,7 @@ const improveDirections = async (rawPoints, initialWaypoints) => {
 	rawPath.addTo(map);
 
 	const { cleanPoints, waypoints, distance, countCalcs } = !hasRouteLink
-		? await improvementCycle(rawPoints, initialWaypoints)
+		? await cleanFull(rawPoints, initialWaypoints)
 		: {
 				countCalcs: 0,
 				cleanPoints: rawPoints,

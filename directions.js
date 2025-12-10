@@ -91,7 +91,6 @@ const fetchDirections = async (mode, data) => {
 };
 
 /**
- *
  * @param {{
  * lat: string | null;
  * lng: string | null;
@@ -102,23 +101,22 @@ const fetchDirections = async (mode, data) => {
  * fitnessLevel: number;
  * greenFactor: number;
  * quietFactor: number;
- * }} result
+ * }} params
  */
-async function directions(result) {
+async function directions(params) {
 	let theJson = null;
 
 	console.log("Doing a directions GET call:");
 
-	const coordinates = buildCoordinates(result);
-	const options = buildOptions(result);
+	const coordinates = buildCoordinates(params);
+	const options = buildOptions(params);
 
 	let tryAgain = true;
 	let directionsError = null;
 	while (tryAgain) {
 		const data = { coordinates, options };
 
-		theJson = await fetchDirections(result.mode, data);
-		console.log(JSON.stringify(data));
+		theJson = await fetchDirections(params.mode, data);
 
 		if (theJson && "error" in theJson) {
 			if (theJson.error.message.indexOf("Could not find routable point") >= 0) {

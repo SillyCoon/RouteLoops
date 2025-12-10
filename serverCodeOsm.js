@@ -1,8 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
-import * as fs from "fs";
 import cors from "cors";
-import { directions } from "./directions.js";
+import { directions, parseQuery } from "./directions.js";
 import { cleanTails } from "./cleanTails.js";
 import { getRLpoints } from "./rlpoints.js";
 import dotenv from "dotenv";
@@ -10,6 +9,7 @@ dotenv.config();
 
 import { parseQuery as parseRLQuery } from "./rlpoints.js";
 import { parseQuery as parseDirectionsQuery } from "./directions.js";
+import { improvementCycle } from "./improvementCycle.js";
 
 var app = express();
 app.use(cors());
@@ -26,6 +26,12 @@ app.get("/getRLpoints", (req, res) =>
 app.post("/cleanTails", (req, res) =>
 	cleanTails(req.body?.LLs ?? []).then((data) => res.json(data)),
 );
+app.post("/cleanFull", (req, res) => {
+	const query = parseQuery(req.url);
+	improvementCycle(req.body.allPoints, req.body.waypoints, query).then((data) =>
+		res.json(data),
+	);
+});
 app.post("/showDirections", showDirections);
 app.post("/makeSparseGPX", makeSparseGPX);
 app.post("/makeDenseGPX", makeDenseGPX);
