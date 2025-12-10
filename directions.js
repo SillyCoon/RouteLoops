@@ -90,6 +90,20 @@ const fetchDirections = async (mode, data) => {
 	}
 };
 
+/**
+ *
+ * @param {{
+ * lat: string | null;
+ * lng: string | null;
+ * highways: string;
+ * ferries: string;
+ * waypoints: string;
+ * mode: string;
+ * fitnessLevel: number;
+ * greenFactor: number;
+ * quietFactor: number;
+ * }} result
+ */
 async function directions(result) {
 	let theJson = null;
 
