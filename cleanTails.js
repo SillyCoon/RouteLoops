@@ -40,8 +40,12 @@ const decideUsage = (points, dists, total, closestIndex) => {
 		if (j - i !== 1) {
 			const tailSize = (dists[j] - dists[i]) / (total || 1);
 			if (tailSize < 0.2) {
+				// Mark all intermediate points as unused
+				for (let k = i + 1; k < j; k++) {
+					use[k] = false;
+				}
 				// skip ahead to the closest point
-				i = j;
+				i = j - 1; // -1 because loop will increment
 			}
 		}
 	}
@@ -81,10 +85,17 @@ async function cleanTails(routeLatLng) {
 	const { dists, total } = cumulativeDistances(points);
 	const { closestIndex } = closestForwardPoints(points);
 	const use = decideUsage(points, dists, total, closestIndex);
+	
+	// Count removed points for logging
+	const removedCount = use.filter(u => !u).length;
+	console.log(`Tail analysis: ${removedCount} points marked for removal out of ${routeLatLng.length} total points`);
+	
 	const newPath = buildPath(points, use);
 
 	const cleanedUp = points.length - newPath.length;
 	const finalDistance = pathDistance(newPath);
+	
+	console.log(`cleanTails trimmed ${cleanedUp} from ${routeLatLng.length} for ${finalDistance.toFixed(2)}km`);
 
 	return { newPath, cleanedUp, distKm: finalDistance };
 }
