@@ -40,8 +40,7 @@ const improvementIteration = async (
 	// Use the updated waypoint set for the next directions call
 	const directionsJson = await directions({
 		...directionsQuery,
-		// directions.buildCoordinates expects "lat,lng" pairs
-		waypoints: newWaypoints.map((wp) => `${wp.lat},${wp.lng}`).join("|"),
+		waypoints: newWaypoints.map((wp) => [wp.lng, wp.lat]),
 	});
 	const newPoints = directionsJson.features[0].allPoints;
 
@@ -80,7 +79,6 @@ export const improvementCycle = async (
 			lastCounts,
 			directionsQuery,
 		);
-		console.log("Iteration result", iterationResult);
 
 		lastCounts = iterationResult.lastCounts;
 		waypoints = iterationResult.waypoints;

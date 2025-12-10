@@ -27,14 +27,8 @@ export function parseQuery(url) {
 	const qIndex = url.indexOf("?");
 	if (qIndex < 0) return defaults;
 	const params = new URLSearchParams(url.slice(qIndex + 1));
-	const entries = Object.fromEntries(params.entries());
-	return { ...defaults, ...entries };
-}
-
-export function buildCoordinates(result) {
-	const start =
-		result.lng != null && result.lat != null ? [[result.lng, result.lat]] : [];
-	const waypoints = (result.waypoints ?? "")
+	const { waypoints, ...entries } = Object.fromEntries(params.entries());
+	const waypointsArray = (waypoints ?? "")
 		.split("|")
 		.map((wp) => wp.split(","))
 		.filter((parts) => parts.length === 2)
@@ -43,9 +37,16 @@ export function buildCoordinates(result) {
 			([lng, lat]) =>
 				Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)),
 		);
+
+	return { ...defaults, ...entries, waypoints: waypointsArray };
+}
+
+export function buildCoordinates(result) {
+	const start =
+		result.lng != null && result.lat != null ? [[result.lng, result.lat]] : [];
 	const end =
 		result.lng != null && result.lat != null ? [[result.lng, result.lat]] : [];
-	return [...start, ...waypoints, ...end];
+	return [...start, ...result.waypoints, ...end];
 }
 
 export function buildOptions(result) {
@@ -96,7 +97,7 @@ const fetchDirections = async (mode, data) => {
  * lng: string | null;
  * highways: string;
  * ferries: string;
- * waypoints: string;
+ * waypoints: Array<[lat: number, lng: number]>;
  * mode: string;
  * fitnessLevel: number;
  * greenFactor: number;
