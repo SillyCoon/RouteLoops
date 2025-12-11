@@ -93,19 +93,21 @@ async function setAsHome(location) {
 	return { location };
 }
 
+const getRLParams = () => {
+	return new URLSearchParams([
+		["lat", homeLocation.lat],
+		["lng", homeLocation.lng],
+		["dist", document.getElementById("inputDist").value],
+		["units", document.getElementById("inputUnits").value],
+		["rotation", document.getElementById("inputRotation").value],
+		["direction", direction],
+		["method", method],
+	]);
+};
+
 const getRLpoints = async () => {
-	const theDistance = document.getElementById("inputDist").value;
-	const theUnits = document.getElementById("inputUnits").value;
-	const theRotation = document.getElementById("inputRotation").value;
-	const theDirection = direction;
-	let url = `${protocol}//${hostname}:${port}/getRLpoints?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
-	url += `&dist=${theDistance}&units=${theUnits}&rotation=${theRotation}&direction=${theDirection}`;
-	const theMethod = method;
-	url += `&method=${theMethod}`;
-	const theResp = await fetch(url);
-	const theJson = await theResp.json();
-	const initialWaypoints = JSON.parse(JSON.stringify(theJson));
-	return initialWaypoints;
+	const theResp = await fetch(url(`getRLpoints`, getRLParams()));
+	return theResp.json();
 };
 
 const drawGuidePoints = (waypoints, waypointsIn) => {
@@ -164,24 +166,31 @@ const drawFinalPath = (data) => {
 	currentWaypoints = JSON.parse(JSON.stringify(data.waypoints));
 };
 
-const getCleanDirections = async (initialWaypoints) => {
-	//Call the directions service using the guide point as waypoints.
-	const theMode = document.getElementById("inputMode").value;
-	const inputHighways = document.getElementById("inputHighways").value;
-	const inputFerries = avoidFerries;
-	const fitnessLevel = document.getElementById("fitnessLevel").value;
-	const greenFactor = document.getElementById("greenFactor").value;
-	const quietFactor = document.getElementById("quietFactor").value;
-	let url = `${protocol}//${hostname}:${port}/cleanDirections?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
-	url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
-	url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
-	let waypointText = "";
-	for (const waypoint of initialWaypoints)
-		waypointText += `${waypoint.lat},${waypoint.lng}|`;
-	waypointText = waypointText.slice(0, -1);
-	url += `&waypoints=${waypointText}`;
+const getDirectionsParams = (initialWaypoints) => {
+	return new URLSearchParams([
+		["lat", homeLocation.lat],
+		["lng", homeLocation.lng],
+		["mode", document.getElementById("inputMode").value],
+		["highways", document.getElementById("inputHighways").value],
+		["ferries", avoidFerries],
+		["fitnessLevel", document.getElementById("fitnessLevel").value],
+		["greenFactor", document.getElementById("greenFactor").value],
+		["quietFactor", document.getElementById("quietFactor").value],
+		[
+			"waypoints",
+			initialWaypoints.map((wp) => `${wp.lat},${wp.lng}`).join("|"),
+		],
+	]);
+};
 
-	const evtSource = new EventSource(url);
+const url = (path, params) => {
+	return `${protocol}//${hostname}:${port}/${path}?${params.toString()}`;
+};
+
+const getCleanDirections = async (initialWaypoints) => {
+	const params = getDirectionsParams(initialWaypoints);
+
+	const evtSource = new EventSource(url(`cleanDirections`, params));
 
 	evtSource.addEventListener("start", (event) => {
 		const data = JSON.parse(event.data);
