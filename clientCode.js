@@ -131,6 +131,39 @@ const drawGuidePoints = (waypoints, waypointsIn) => {
 	if (!waypointsIn) map.fitBounds(RLBounds);
 };
 
+const drawRawPath = (points) => {
+	rawPath = new L.Polyline(
+		points.map((point) => new L.LatLng(point.lat, point.lng)),
+		{
+			color: "green",
+			weight: 2,
+			opacity: 1.0,
+			smoothFactor: 1,
+		},
+	);
+	rawPath.addTo(map);
+};
+
+const drawFinalPath = (data) => {
+	rlPath && map.removeLayer(rlPath);
+
+	document.getElementById("outDist").innerHTML = data.distance.toFixed(1);
+	document.getElementById("calcs").innerHTML = data.countCalcs;
+
+	rlPath = new L.Polyline(
+		data.points.map((point) => new L.LatLng(point.lat, point.lng)),
+		{
+			color: "red",
+			weight: 3,
+			opacity: 1.0,
+			smoothFactor: 1,
+		},
+	);
+	rlPath.addTo(map);
+
+	currentWaypoints = JSON.parse(JSON.stringify(data.waypoints));
+};
+
 const getCleanDirections = async (initialWaypoints) => {
 	//Call the directions service using the guide point as waypoints.
 	const theMode = document.getElementById("inputMode").value;
@@ -149,49 +182,24 @@ const getCleanDirections = async (initialWaypoints) => {
 	url += `&waypoints=${waypointText}`;
 
 	const evtSource = new EventSource(url);
-	evtSource.onmessage = (event) => {
+
+	evtSource.addEventListener("start", (event) => {
 		const data = JSON.parse(event.data);
-		console.log("data", data);
-		if (data.iteration === 0) {
-			console.log("Drawing raw path");
-			rawPath = new L.Polyline(
-				data.points.map((point) => new L.LatLng(point.lat, point.lng)),
-				{
-					color: "green",
-					weight: 2,
-					opacity: 1.0,
-					smoothFactor: 1,
-				},
-			);
-			rawPath.addTo(map);
-			return;
-		}
+		drawRawPath(data.points);
+		rlPath = null;
+	});
+
+	evtSource.addEventListener("refinement", (event) => {
+		const data = JSON.parse(event.data);
 
 		if (data.iteration === 1) {
 			map.removeLayer(rawPath);
 			map.removeLayer(guidepointPath);
 		}
-
-		if (data.iteration > 1) {
-			rlPath && map.removeLayer(rlPath);
-		}
-
-		document.getElementById("outDist").innerHTML = data.distance.toFixed(1);
-		document.getElementById("calcs").innerHTML = data.countCalcs;
-
-		rlPath = new L.Polyline(
-			data.points.map((point) => new L.LatLng(point.lat, point.lng)),
-			{
-				color: "red",
-				weight: 3,
-				opacity: 1.0,
-				smoothFactor: 1,
-			},
-		);
-		rlPath.addTo(map);
+		drawFinalPath(data);
 
 		currentWaypoints = JSON.parse(JSON.stringify(data.waypoints));
-	};
+	});
 };
 
 const cleanMap = () => {

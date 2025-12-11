@@ -40,6 +40,11 @@ app.get("/cleanDirections", async (req, res) => {
 	});
 
 	for await (const data of cleanDirections(parseDirectionsQuery(req.url))) {
+		if (data.iteration === 0) {
+			res.write("event: start\n");
+		} else {
+			res.write("event: refinement\n");
+		}
 		res.write(`data: ${JSON.stringify(data)}\n\n`);
 	}
 });
