@@ -112,14 +112,12 @@ const getRLpoints = async () => {
 
 const drawGuidePoints = (waypoints, waypointsIn) => {
 	//Add the starting location as both the first, and the last, guide point.
-	const guidePoints = [];
-	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
-	for (const waypoint of waypoints)
-		guidePoints.push(new L.LatLng(waypoint.lat, waypoint.lng));
-	guidePoints.push(new L.LatLng(homeLocation.lat, homeLocation.lng));
-
+	const guidePoints = [
+		new L.LatLng(homeLocation.lat, homeLocation.lng),
+		...waypoints.map((wp) => new L.LatLng(wp.lat, wp.lng)),
+		new L.LatLng(homeLocation.lat, homeLocation.lng),
+	];
 	//Draw these guide points on the map.
-
 	guidepointPath = new L.Polyline(guidePoints, {
 		color: "blue",
 		weight: 2,
