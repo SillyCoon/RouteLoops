@@ -1,9 +1,38 @@
 import { directions } from "./directions.js";
-import { improvementCycle } from "./improvementCycle.js";
+import { improvementCycleGen } from "./improvementCycle.js";
 
-export const cleanDirections = async (query) => {
+export async function* cleanDirections(query) {
+	// Run base directions
 	const { features } = await directions(query);
-	const initialPoints = query.waypoints ?? [];
 	const allPoints = features[0]?.allPoints ?? [];
-	return improvementCycle(allPoints, initialPoints, query);
-};
+
+	// Convert query waypoints ([lng,lat]) into {lat,lng} objects for improvementCycleGen
+	const initialWaypoints = (query.waypoints ?? []).map(([lng, lat]) => ({
+		lat,
+		lng,
+	}));
+
+	// Yield a uniform first step compatible with improvementCycleGen outputs
+	const initialDistance =
+		allPoints.length > 0
+			? (allPoints[allPoints.length - 1]?.cumulativeDistanceKm ?? 0)
+			: 0;
+	yield {
+		iteration: 0,
+		distance: initialDistance,
+		cleanedUp: 0,
+		totalPoints: allPoints.length,
+		waypoints: initialWaypoints,
+		points: allPoints,
+		keepGoing: true,
+	};
+
+	// Stream subsequent improvement iterations
+	for await (const improvement of improvementCycleGen(
+		allPoints,
+		initialWaypoints,
+		query,
+	)) {
+		yield improvement;
+	}
+}

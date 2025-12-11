@@ -131,31 +131,7 @@ const drawGuidePoints = (waypoints, waypointsIn) => {
 	if (!waypointsIn) map.fitBounds(RLBounds);
 };
 
-const cleanFull = async (allPoints, waypoints) => {
-	const theMode = document.getElementById("inputMode").value;
-	const inputHighways = document.getElementById("inputHighways").value;
-	const inputFerries = avoidFerries;
-	const fitnessLevel = document.getElementById("fitnessLevel").value;
-	const greenFactor = document.getElementById("greenFactor").value;
-	const quietFactor = document.getElementById("quietFactor").value;
-	let url = `${protocol}//${hostname}:${port}/cleanFull?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
-	url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
-	url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
-
-	console.log("Sending cleanFull request to server...");
-	console.log(allPoints, waypoints);
-	const resp = await fetch(url, {
-		method: "POST",
-		body: JSON.stringify({ allPoints, waypoints }),
-		headers: {
-			Accept: "application/json",
-			"Content-Type": "application/json",
-		},
-	});
-	return resp.json();
-};
-
-const getDirections = async (initialWaypoints) => {
+const getCleanDirections = async (initialWaypoints) => {
 	//Call the directions service using the guide point as waypoints.
 	const theMode = document.getElementById("inputMode").value;
 	const inputHighways = document.getElementById("inputHighways").value;
@@ -163,7 +139,7 @@ const getDirections = async (initialWaypoints) => {
 	const fitnessLevel = document.getElementById("fitnessLevel").value;
 	const greenFactor = document.getElementById("greenFactor").value;
 	const quietFactor = document.getElementById("quietFactor").value;
-	let url = `${protocol}//${hostname}:${port}/directions?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
+	let url = `${protocol}//${hostname}:${port}/cleanDirections?lat=${homeLocation.lat}&lng=${homeLocation.lng}`;
 	url += `&mode=${theMode}&highways=${inputHighways}&ferries=${inputFerries}`;
 	url += `&fitnessLevel=${fitnessLevel}&greenFactor=${greenFactor}&quietFactor=${quietFactor}`;
 	let waypointText = "";
@@ -171,8 +147,51 @@ const getDirections = async (initialWaypoints) => {
 		waypointText += `${waypoint.lat},${waypoint.lng}|`;
 	waypointText = waypointText.slice(0, -1);
 	url += `&waypoints=${waypointText}`;
-	const theResp = await fetch(url);
-	return await theResp.json();
+
+	const evtSource = new EventSource(url);
+	evtSource.onmessage = (event) => {
+		const data = JSON.parse(event.data);
+		console.log("data", data);
+		if (data.iteration === 0) {
+			console.log("Drawing raw path");
+			rawPath = new L.Polyline(
+				data.points.map((point) => new L.LatLng(point.lat, point.lng)),
+				{
+					color: "green",
+					weight: 2,
+					opacity: 1.0,
+					smoothFactor: 1,
+				},
+			);
+			rawPath.addTo(map);
+			return;
+		}
+
+		if (data.iteration === 1) {
+			map.removeLayer(rawPath);
+			map.removeLayer(guidepointPath);
+		}
+
+		if (data.iteration > 1) {
+			rlPath && map.removeLayer(rlPath);
+		}
+
+		document.getElementById("outDist").innerHTML = data.distance.toFixed(1);
+		document.getElementById("calcs").innerHTML = data.countCalcs;
+
+		rlPath = new L.Polyline(
+			data.points.map((point) => new L.LatLng(point.lat, point.lng)),
+			{
+				color: "red",
+				weight: 3,
+				opacity: 1.0,
+				smoothFactor: 1,
+			},
+		);
+		rlPath.addTo(map);
+
+		currentWaypoints = JSON.parse(JSON.stringify(data.waypoints));
+	};
 };
 
 const cleanMap = () => {
@@ -191,69 +210,13 @@ const cleanMap = () => {
 	} catch {}
 };
 
-const improveDirections = async (rawPoints, initialWaypoints) => {
-	//Draw the raw result on the map.  This has not yet been cleaned up by RouteLoops.
-	rawPath = new L.Polyline(rawPoints, {
-		color: "green",
-		weight: 2,
-		opacity: 1.0,
-		smoothFactor: 1,
-	});
-	rawPath.addTo(map);
-
-	const { cleanPoints, waypoints, distance, countCalcs } = !hasRouteLink
-		? await cleanFull(rawPoints, initialWaypoints)
-		: {
-				countCalcs: 0,
-				cleanPoints: rawPoints,
-				waypoints: initialWaypoints,
-				distance: rawPoints[rawPoints.length - 1].cumulativeDistanceKm,
-			};
-
-	hasRouteLink = false;
-
-	document.getElementById("outDist").innerHTML = distance.toFixed(1);
-	document.getElementById("calcs").innerHTML = countCalcs;
-
-	rlPath = new L.Polyline(
-		cleanPoints.map((point) => new L.LatLng(point.lat, point.lng)),
-		{
-			color: "red",
-			weight: 3,
-			opacity: 1.0,
-			smoothFactor: 1,
-		},
-	);
-	rlPath.addTo(map);
-
-	map.removeLayer(rawPath);
-	map.removeLayer(guidepointPath);
-
-	currentWaypoints = JSON.parse(JSON.stringify(waypoints));
-
-	return cleanPoints;
-};
-
 //........................................................................................
 async function doRL(waypointsIn) {
 	cleanMap();
 	const initialWaypoints = waypointsIn ?? (await getRLpoints());
 	drawGuidePoints(initialWaypoints, waypointsIn);
 
-	const theJson = await getDirections(initialWaypoints);
-
-	if ("error" in theJson) {
-		alert(
-			`The routing server has returned an error.  Try again with a slightly shorter route.  The error returned was "${theJson.error}"`,
-		);
-		cleanMap();
-		return;
-	} else {
-		allPoints = await improveDirections(
-			theJson.features[0].allPoints,
-			initialWaypoints,
-		);
-	}
+	await getCleanDirections(initialWaypoints);
 }
 
 const fetchFromServer = async (path, data) => {

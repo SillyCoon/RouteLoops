@@ -27,9 +27,22 @@ app.get("/getRLpoints", (req, res) =>
 app.post("/cleanTails", (req, res) =>
 	cleanTails(req.body?.LLs ?? []).then((data) => res.json(data)),
 );
-app.get("/cleanDirections", (req, res) =>
-	cleanDirections(parseDirectionsQuery(req.url)).then((data) => res.json(data)),
-);
+app.get("/cleanDirections", async (req, res) => {
+	res.setHeader("Cache-Control", "no-cache");
+	res.setHeader("Content-Type", "text/event-stream");
+	res.setHeader("Access-Control-Allow-Origin", "*");
+	res.setHeader("Connection", "keep-alive");
+	res.flushHeaders();
+
+	res.on("close", () => {
+		console.log("client dropped me");
+		res.end();
+	});
+
+	for await (const data of cleanDirections(parseDirectionsQuery(req.url))) {
+		res.write(`data: ${JSON.stringify(data)}\n\n`);
+	}
+});
 app.post("/cleanFull", (req, res) => {
 	const query = parseDirectionsQuery(req.url);
 	improvementCycle(req.body.allPoints, req.body.waypoints, query).then((data) =>
