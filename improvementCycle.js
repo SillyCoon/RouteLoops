@@ -69,6 +69,7 @@ export async function* improvementCycleGen(
 	let lastCounts = { cleaned: -1, total: -1 };
 	let keepGoing = true;
 	let countCalcs = 0;
+	let distance = rawPoints[rawPoints.length - 1]?.cumulativeDistanceKm ?? 0;
 
 	while (keepGoing) {
 		countCalcs += 1;
@@ -97,6 +98,13 @@ export async function* improvementCycleGen(
 		distance = iterationResult.distance;
 		finalPoints = iterationResult.allPoints;
 	}
+
+	return {
+		points: finalPoints,
+		waypoints,
+		distance,
+		iteration: countCalcs,
+	};
 }
 
 // Backward-compatible helper that consumes the generator and returns final result
