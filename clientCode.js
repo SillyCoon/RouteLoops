@@ -166,6 +166,7 @@ const drawFinalPath = (data) => {
 
 const getDirectionsParams = (initialWaypoints) => {
 	return new URLSearchParams([
+		["distance", document.getElementById("inputDist").value],
 		["lat", homeLocation.lat],
 		["lng", homeLocation.lng],
 		["mode", document.getElementById("inputMode").value],

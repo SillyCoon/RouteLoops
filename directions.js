@@ -23,6 +23,7 @@ export function parseQuery(url) {
 		fitnessLevel: 1,
 		greenFactor: 0,
 		quietFactor: 0,
+		distance: 0,
 	};
 	const qIndex = url.indexOf("?");
 	if (qIndex < 0) return defaults;
@@ -38,7 +39,12 @@ export function parseQuery(url) {
 				Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)),
 		);
 
-	return { ...defaults, ...entries, waypoints: waypointsArray };
+	return {
+		...defaults,
+		...entries,
+		distance: +entries.distance,
+		waypoints: waypointsArray,
+	};
 }
 
 export function buildCoordinates(result) {
