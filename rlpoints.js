@@ -3,10 +3,6 @@
 // Named constants to eliminate magic numbers and clarify intent
 
 // Distance conversion
-const INCHES_PER_FOOT = 12;
-const CENTIMETERS_PER_INCH = 2.54;
-const METERS_PER_CENTIMETER = 0.01;
-const FEET_PER_MILE = 5280;
 const METERS_PER_KILOMETER = 1000;
 
 // Geographic approximations
@@ -27,62 +23,50 @@ const RECT_MIN_RATIO = 1 / RECT_MAX_RATIO; // min height:width ratio
 // Note: Precomputed angle fractions kept for clarity but not directly used
 
 export const parseQuery = (url) => {
-	const params = new URLSearchParams(url.split("?")[1]);
+	const params = new URL(url).searchParams;
 	return {
-		lat: params.get("lat"),
-		lng: params.get("lng"),
-		dist: params.get("dist"),
-		units: params.get("units"),
-		method: params.get("method"),
-		direction: params.get("direction"),
-		rotation: params.get("rotation"),
+		latLng: { lat: +params.get("lat"), lng: +params.get("lng") },
+		dist: params.get("dist") * METERS_PER_KILOMETER,
+		direction: params.get("direction") ?? 0,
+		method: calculateMethod(params.get("method")),
+		rotation: params.get("rotation") ?? "clockwise",
 	};
 };
 
-export async function getRLpoints(result) {
-	const LatLng = { lat: 1 * result.lat, lng: 1 * result.lng };
+const calculateMethod = (maybeMethod) => {
+	if (maybeMethod && maybeMethod !== "random") return maybeMethod;
+	return ["circular", "rectangular", "figure8"][
+		Math.floor(Math.random() * methods.length)
+	];
+};
 
-	let targetLengthInMeters = result.dist;
+const methods = {
+	circular: circleRoute,
+	rectangular: rectangleRoute,
+	figure8: fig8Route,
+};
 
-	let units = result.units;
-	if (units == null) units = "imperial";
-	// Imperial: miles->feet->inches->cm->meters
-	if (units === "imperial") {
-		const INCHES_PER_MILE = FEET_PER_MILE * INCHES_PER_FOOT;
-		const METERS_PER_MILE =
-			INCHES_PER_MILE * CENTIMETERS_PER_INCH * METERS_PER_CENTIMETER;
-		targetLengthInMeters *= METERS_PER_MILE;
-	}
-	if (units === "metric") targetLengthInMeters *= METERS_PER_KILOMETER;
-
-	let direction = result.direction;
-	if (direction == null) direction = 0;
-
-	let rotation = result.rotation;
-	if (rotation == null) rotation = "clockwise";
-
-	let pickMethod = result.method;
-
-	if (pickMethod === "random" || pickMethod == null) {
-		const methods = ["circular", "rectangular", "figure8"];
-		pickMethod = methods[Math.floor(Math.random() * methods.length)];
-	}
-
-	console.log(`picMethod of ${pickMethod} in direction ${direction} `);
-	let rlPoints = [];
-	if (pickMethod === "circular")
-		rlPoints = circleRoute(LatLng, targetLengthInMeters, direction, rotation);
-	if (pickMethod === "rectangular")
-		rlPoints = rectangleRoute(
-			LatLng,
-			targetLengthInMeters,
-			direction,
-			rotation,
-		);
-	if (pickMethod === "figure8")
-		rlPoints = fig8Route(LatLng, targetLengthInMeters, direction, rotation);
-
-	return rlPoints;
+/**
+ * Retrieves route loop points based on the specified parameters.
+ *
+ * @async
+ * @function getRLpoints
+ * @param {Object} params - The parameters for generating route loop points.
+ * @param {Object} params.latLng - The latitude and longitude coordinates.
+ * @param {number} params.dist - The distance for the route loop in meters.
+ * @param {string} params.direction - The direction of the route loop.
+ * @param {string} params.method - The method to use for generating points.
+ * @param {number} params.rotation - The rotation angle for the route loop.
+ * @returns {Promise<any>} A promise that resolves to the generated route loop points.
+ */
+export async function getRLpoints({
+	latLng,
+	dist,
+	direction,
+	method,
+	rotation,
+}) {
+	return methods[method](latLng, dist, direction, rotation);
 }
 
 function circleRoute(BaseLocation, length, travelHeading, rotation) {
