@@ -58,5 +58,5 @@ export async function getRLpoints({
 	method,
 	rotation,
 }) {
-	return methods["figure8"](latLng, dist, direction, rotation);
+	return methods[method](latLng, dist, direction, rotation);
 }

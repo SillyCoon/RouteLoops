@@ -26,13 +26,16 @@ export function circleRoute(
 	travelHeading,
 	rotation,
 	circlePoints = DEFAULT_CIRCLE_POINTS,
+	directionOverride,
 ) {
 	const sign = signByRotation[rotation];
 	const radius = length / (2 * Math.PI);
 	const deg = [];
 	const rlPoints = [];
 	const direction =
-		directionByHeading[travelHeading] ?? directionByHeading.default;
+		directionOverride ??
+		directionByHeading[travelHeading] ??
+		directionByHeading.default;
 	const center = calculatePoint(BaseLocation, direction, radius);
 
 	deg.push(direction + Math.PI);
