@@ -1,18 +1,17 @@
+import { circleRoute } from "./routes/circle.js";
+import {
+	METERS_PER_DEGREE_LAT,
+	METERS_PER_DEGREE_LNG_EQUATOR,
+	METERS_PER_KILOMETER,
+} from "./routes/constants.js";
+
 // Extracted without refactor from serverCodeOsm.js
 // Provides getRLpoints, circleRoute, rectangleRoute, fig8Route
 // Named constants to eliminate magic numbers and clarify intent
 
 // Distance conversion
-const METERS_PER_KILOMETER = 1000;
-
-// Geographic approximations
-// Mean meters per degree latitude (approx.)
-const METERS_PER_DEGREE_LAT = 110540;
-// Mean meters per degree longitude at equator; scaled by cos(latitude)
-const METERS_PER_DEGREE_LNG_EQUATOR = 111320;
 
 // Circle/figure-8 generation parameters
-const DEFAULT_CIRCLE_POINTS = 4; // points around circle for circular route
 const FIG8_CIRCLE_POINTS = 3; // points per lobe in figure-8
 
 // Rectangle generation parameters
@@ -23,7 +22,7 @@ const RECT_MIN_RATIO = 1 / RECT_MAX_RATIO; // min height:width ratio
 // Note: Precomputed angle fractions kept for clarity but not directly used
 
 export const parseQuery = (url) => {
-	const params = new URL(url).searchParams;
+	const params = new URLSearchParams(url.split("?")[1]);
 	return {
 		latLng: { lat: +params.get("lat"), lng: +params.get("lng") },
 		dist: params.get("dist") * METERS_PER_KILOMETER,
@@ -67,63 +66,6 @@ export async function getRLpoints({
 	rotation,
 }) {
 	return methods[method](latLng, dist, direction, rotation);
-}
-
-function circleRoute(BaseLocation, length, travelHeading, rotation) {
-	const radius = length / (2 * Math.PI);
-	const circlePoints = DEFAULT_CIRCLE_POINTS;
-	const deg = [];
-	const rlPoints = [];
-
-	let direction = Math.random() * 2 * Math.PI; //in radians
-	const th1 = travelHeading;
-	if (th1 === 0)
-		direction = Math.random() * 2 * Math.PI; //in radians
-	else if (th1 === 1)
-		direction = (Math.random() * Math.PI) / 4 + (3 * Math.PI) / 8;
-	else if (th1 === 2)
-		direction = (Math.random() * Math.PI) / 4 + (1 * Math.PI) / 8;
-	else if (th1 === 3) direction = (Math.random() * Math.PI) / 4 - Math.PI / 8;
-	else if (th1 === 4)
-		direction = (Math.random() * Math.PI) / 4 + (13 * Math.PI) / 8;
-	else if (th1 === 5)
-		direction = (Math.random() * Math.PI) / 4 + (11 * Math.PI) / 8;
-	else if (th1 === 6)
-		direction = (Math.random() * Math.PI) / 4 + (9 * Math.PI) / 8;
-	else if (th1 === 7)
-		direction = (Math.random() * Math.PI) / 4 + (7 * Math.PI) / 8;
-	else if (th1 === 8)
-		direction = (Math.random() * Math.PI) / 4 + (5 * Math.PI) / 8;
-
-	let dx = radius * Math.cos(direction);
-	let dy = radius * Math.sin(direction);
-	let delta_lat = dy / METERS_PER_DEGREE_LAT;
-	let delta_lng =
-		dx /
-		(METERS_PER_DEGREE_LNG_EQUATOR *
-			Math.cos((BaseLocation.lat * Math.PI) / 180));
-	const center = {
-		lat: BaseLocation.lat + delta_lat,
-		lng: BaseLocation.lng + delta_lng,
-	};
-
-	deg.push(direction + Math.PI);
-	let sign = -1;
-	if (rotation === "clockwise") sign = -1;
-	else sign = +1;
-
-	for (let i = 1; i < circlePoints + 1; i++) {
-		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
-		dx = radius * Math.cos(deg[i]);
-		dy = radius * Math.sin(deg[i]);
-		delta_lat = dy / METERS_PER_DEGREE_LAT;
-		delta_lng =
-			dx /
-			(METERS_PER_DEGREE_LNG_EQUATOR * Math.cos((center.lat * Math.PI) / 180));
-		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
-	}
-
-	return rlPoints;
 }
 
 function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
