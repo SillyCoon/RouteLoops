@@ -27,7 +27,7 @@ export const parseQuery = (url) => {
 	return {
 		latLng: { lat: +params.get("lat"), lng: +params.get("lng") },
 		dist: params.get("dist") * METERS_PER_KILOMETER,
-		direction: params.get("direction") ?? 0,
+		direction: params.get("direction") ? +params.get("direction") : 0,
 		method: calculateMethod(params.get("method")),
 		rotation: params.get("rotation") ?? "clockwise",
 	};
@@ -76,7 +76,7 @@ function circleRoute(BaseLocation, length, travelHeading, rotation) {
 	const rlPoints = [];
 
 	let direction = Math.random() * 2 * Math.PI; //in radians
-	const th1 = Number(travelHeading);
+	const th1 = travelHeading;
 	if (th1 === 0)
 		direction = Math.random() * 2 * Math.PI; //in radians
 	else if (th1 === 1)
@@ -140,7 +140,7 @@ function rectangleRoute(BaseLocation, length, travelHeading, rotation) {
 	const diagonal = Math.sqrt(width * width + height * height);
 	const theta = Math.acos(height / diagonal);
 
-	const th2 = Number(travelHeading);
+	const th2 = travelHeading;
 	if (th2 === 0)
 		direction = Math.random() * 2 * Math.PI; //in radians
 	else if (th2 === 1)
@@ -212,7 +212,7 @@ function fig8Route(BaseLocation, length, travelHeading, rotation) {
 	const rlPoints = [];
 
 	let direction;
-	const th3 = Number(travelHeading);
+	const th3 = travelHeading;
 	if (th3 === 0)
 		direction = Math.random() * 2 * Math.PI; //in radians
 	else if (th3 === 1)
