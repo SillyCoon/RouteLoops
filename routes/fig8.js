@@ -1,9 +1,7 @@
-import { calculatePoint, directionByHeading } from "./constants";
+import { directionByHeading } from "./constants.js";
 import { circleRoute } from "./circle.js";
 
 const FIG8_CIRCLE_POINTS = 3; // points per lobe in figure-8
-
-// TODO resolved: use circleRoute as helper
 
 export function fig8Route(BaseLocation, length, travelHeading, rotation) {
 	const direction =
