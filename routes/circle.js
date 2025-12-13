@@ -1,6 +1,8 @@
 import {
 	METERS_PER_DEGREE_LAT,
 	METERS_PER_DEGREE_LNG_EQUATOR,
+	directionByHeading,
+	signByRotation,
 } from "./constants.js";
 
 const DEFAULT_CIRCLE_POINTS = 4; // points around circle for circular route
@@ -18,23 +20,15 @@ const calculatePoint = (location, direction, radius) => {
 	};
 };
 
-const directionByHeading = {
-	0: Math.random() * Math.PI * 2,
-	1: (Math.random() * Math.PI) / 4 + (3 * Math.PI) / 8,
-	2: (Math.random() * Math.PI) / 4 + (1 * Math.PI) / 8,
-	3: (Math.random() * Math.PI) / 4 - Math.PI / 8,
-	4: (Math.random() * Math.PI) / 4 + (13 * Math.PI) / 8,
-	5: (Math.random() * Math.PI) / 4 + (11 * Math.PI) / 8,
-	6: (Math.random() * Math.PI) / 4 + (9 * Math.PI) / 8,
-	7: (Math.random() * Math.PI) / 4 + (7 * Math.PI) / 8,
-	8: (Math.random() * Math.PI) / 4 + (5 * Math.PI) / 8,
-	default: Math.random() * Math.PI * 2,
-};
-
-export function circleRoute(BaseLocation, length, travelHeading, rotation) {
-	const sign = rotation === "clockwise" ? -1 : 1;
+export function circleRoute(
+	BaseLocation,
+	length,
+	travelHeading,
+	rotation,
+	circlePoints = DEFAULT_CIRCLE_POINTS,
+) {
+	const sign = signByRotation[rotation];
 	const radius = length / (2 * Math.PI);
-	const circlePoints = DEFAULT_CIRCLE_POINTS;
 	const deg = [];
 	const rlPoints = [];
 	const direction =

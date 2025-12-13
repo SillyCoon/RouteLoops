@@ -1,10 +1,7 @@
 import { circleRoute } from "./routes/circle.js";
 import { rectangleRoute } from "./routes/rectangle.js";
-import {
-	METERS_PER_DEGREE_LAT,
-	METERS_PER_DEGREE_LNG_EQUATOR,
-	METERS_PER_KILOMETER,
-} from "./routes/constants.js";
+import { fig8Route } from "./routes/fig8.js";
+import { METERS_PER_KILOMETER } from "./routes/constants.js";
 
 // Extracted without refactor from serverCodeOsm.js
 // Provides getRLpoints, circleRoute, rectangleRoute, fig8Route
@@ -13,7 +10,6 @@ import {
 // Distance conversion
 
 // Circle/figure-8 generation parameters
-const FIG8_CIRCLE_POINTS = 3; // points per lobe in figure-8
 
 // Heading sectors (radians) relative to east=0 using original fractional definitions
 // Note: Precomputed angle fractions kept for clarity but not directly used
@@ -62,93 +58,5 @@ export async function getRLpoints({
 	method,
 	rotation,
 }) {
-	return methods[method](latLng, dist, direction, rotation);
-}
-
-function fig8Route(BaseLocation, length, travelHeading, rotation) {
-	const radius = length / (4 * Math.PI);
-	const circlePoints = FIG8_CIRCLE_POINTS;
-	const deg = [];
-	const rlPoints = [];
-
-	let direction;
-	const th3 = travelHeading;
-	if (th3 === 0)
-		direction = Math.random() * 2 * Math.PI; //in radians
-	else if (th3 === 1)
-		direction = (Math.random() * Math.PI) / 4 + (3 * Math.PI) / 8;
-	else if (th3 === 2)
-		direction = (Math.random() * Math.PI) / 4 + (1 * Math.PI) / 8;
-	else if (th3 === 3) direction = (Math.random() * Math.PI) / 4 - Math.PI / 8;
-	else if (th3 === 4)
-		direction = (Math.random() * Math.PI) / 4 + (13 * Math.PI) / 8;
-	else if (th3 === 5)
-		direction = (Math.random() * Math.PI) / 4 + (11 * Math.PI) / 8;
-	else if (th3 === 6)
-		direction = (Math.random() * Math.PI) / 4 + (9 * Math.PI) / 8;
-	else if (th3 === 7)
-		direction = (Math.random() * Math.PI) / 4 + (7 * Math.PI) / 8;
-	else if (th3 === 8)
-		direction = (Math.random() * Math.PI) / 4 + (5 * Math.PI) / 8;
-
-	let dx = radius * Math.cos(direction);
-	let dy = radius * Math.sin(direction);
-	let delta_lat = dy / METERS_PER_DEGREE_LAT;
-	let delta_lng =
-		dx /
-		(METERS_PER_DEGREE_LNG_EQUATOR *
-			Math.cos((BaseLocation.lat * Math.PI) / 180));
-	let center = {
-		lat: BaseLocation.lat + delta_lat,
-		lng: BaseLocation.lng + delta_lng,
-	};
-
-	deg.push(direction + Math.PI);
-	let sign = -1;
-	if (rotation === "clockwise") sign = -1;
-	else sign = +1;
-
-	for (let i = 1; i < circlePoints + 1; i++) {
-		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
-		dx = radius * Math.cos(deg[i]);
-		dy = radius * Math.sin(deg[i]);
-		delta_lat = dy / METERS_PER_DEGREE_LAT;
-		delta_lng =
-			dx /
-			(METERS_PER_DEGREE_LNG_EQUATOR * Math.cos((center.lat * Math.PI) / 180));
-		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
-	}
-
-	direction = direction + Math.PI;
-
-	dx = radius * Math.cos(direction);
-	dy = radius * Math.sin(direction);
-	delta_lat = dy / METERS_PER_DEGREE_LAT;
-	delta_lng =
-		dx /
-		(METERS_PER_DEGREE_LNG_EQUATOR *
-			Math.cos((BaseLocation.lat * Math.PI) / 180));
-	center = {
-		lat: BaseLocation.lat + delta_lat,
-		lng: BaseLocation.lng + delta_lng,
-	};
-
-	deg.length = 0;
-	deg.push(direction + Math.PI);
-	sign = +1;
-	if (rotation === "clockwise") sign = +1;
-	else sign = -1;
-
-	for (let i = 1; i < circlePoints + 1; i++) {
-		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
-		dx = radius * Math.cos(deg[i]);
-		dy = radius * Math.sin(deg[i]);
-		delta_lat = dy / METERS_PER_DEGREE_LAT;
-		delta_lng =
-			dx /
-			(METERS_PER_DEGREE_LNG_EQUATOR * Math.cos((center.lat * Math.PI) / 180));
-		rlPoints.push({ lat: center.lat + delta_lat, lng: center.lng + delta_lng });
-	}
-
-	return rlPoints;
+	return methods["figure8"](latLng, dist, direction, rotation);
 }
