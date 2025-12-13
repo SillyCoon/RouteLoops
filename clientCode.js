@@ -28,10 +28,6 @@ window.onload = async () => {
 	document.querySelector("#createOutput").addEventListener("change", () => {
 		generateOutput();
 	});
-
-	document.querySelector("#inputMode").addEventListener("change", () => {
-		changeMode();
-	});
 };
 
 async function initMap() {
@@ -54,16 +50,6 @@ async function initMap() {
 		useRouteLink();
 	}
 
-	return;
-}
-//--------------------------------------
-function changeMode() {
-	var theMode = document.getElementById("inputMode").value;
-	const currentUrl = window.location.href;
-	var split = currentUrl.split("?");
-	var url = split[0];
-	url += `?mode=${theMode}`;
-	window.open(url, "_self");
 	return;
 }
 
