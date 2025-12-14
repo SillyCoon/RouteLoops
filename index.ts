@@ -1,6 +1,6 @@
 import html from "./index.html";
-import { cleanDirections } from "./server/cleanDirections";
-import { parseQuery } from "./server/directions";
+import { cleanDirections } from "./server/directions/cleanDirections";
+import { parseQuery } from "./server/directions/query";
 import { getRLpoints, parseQuery as parseRLQuery } from "./server/rlpoints";
 
 const server = Bun.serve({

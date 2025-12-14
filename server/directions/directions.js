@@ -1,3 +1,5 @@
+import { buildCoordinates, buildOptions } from "./query.js";
+
 // Shared helper to compute distance between two lat/lng points in km.
 function LatLngDist(lat1, lon1, lat2, lon2) {
 	const R = 6371; // km
@@ -9,70 +11,6 @@ function LatLngDist(lat1, lon1, lat2, lon2) {
 		Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
 	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 	return R * c;
-}
-
-// Helpers
-export function parseQuery(params) {
-	const defaults = {
-		lat: null,
-		lng: null,
-		highways: "no",
-		ferries: "no",
-		waypoints: "",
-		mode: "cycling-regular",
-		fitnessLevel: 1,
-		greenFactor: 0,
-		quietFactor: 0,
-		distance: 0,
-	};
-	if (!params) return defaults;
-	const { waypoints, ...entries } = Object.fromEntries(params.entries());
-	const waypointsArray = (waypoints ?? "")
-		.split("|")
-		.map((wp) => wp.split(","))
-		.filter((parts) => parts.length === 2)
-		.map(([lat, lng]) => [lng, lat])
-		.filter(
-			([lng, lat]) =>
-				Number.isFinite(Number(lat)) && Number.isFinite(Number(lng)),
-		);
-
-	return {
-		...defaults,
-		...entries,
-		distance: +entries.distance,
-		waypoints: waypointsArray,
-	};
-}
-
-export function buildCoordinates(result) {
-	const start =
-		result.lng != null && result.lat != null ? [[result.lng, result.lat]] : [];
-	const end =
-		result.lng != null && result.lat != null ? [[result.lng, result.lat]] : [];
-	return [...start, ...result.waypoints, ...end];
-}
-
-export function buildOptions(result) {
-	const mode = result.mode ?? "cycling-regular";
-	const isDriving = mode.includes("driv");
-	const isCycling = mode.includes("cycl");
-	const isFoot = mode.includes("foot");
-	const avoid_features = [];
-	const tolls = result.highways === "yes" ? "yes" : "no";
-	if (isDriving && tolls === "yes") avoid_features.push("tollways");
-	if ((isDriving || isCycling || isFoot) && result.ferries === "yes")
-		avoid_features.push("ferries");
-	if (isDriving && result.highways === "yes") avoid_features.push("highways");
-
-	const profile_params = {
-		weightings: {
-			steepness_difficulty: Number(result.fitnessLevel) * 1,
-			green: Number(result.greenFactor) * 1,
-			quiet: Number(result.quietFactor) * 1,
-		},
-	};
-	return { avoid_features, profile_params };
 }
 
 const fetchDirections = async (mode, data) => {
@@ -124,6 +62,7 @@ async function directions(params) {
 		theJson = await fetchDirections(params.mode, data);
 
 		if (theJson && "error" in theJson) {
+			console.log("Directions error:", theJson);
 			if (theJson.error.message.indexOf("Could not find routable point") >= 0) {
 				const split = theJson.error.message.split("coordinate");
 				const info = split[1]?.trim() ?? "";
