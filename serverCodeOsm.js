@@ -1,12 +1,12 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { getRLpoints } from "./rlpoints.js";
+import { getRLpoints } from "./server/rlpoints.js";
 import { cleanDirections } from "./cleanDirections.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-import { parseQuery as parseRLQuery } from "./rlpoints.js";
+import { parseQuery as parseRLQuery } from "./server/rlpoints.js";
 import { parseQuery as parseDirectionsQuery } from "./directions.js";
 
 var app = express();
