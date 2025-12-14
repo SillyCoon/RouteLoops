@@ -26,7 +26,7 @@ const schema = v.object({
 	method: v.optional(
 		v.picklist(["random", "circular", "rectangular", "figure8"]),
 	),
-	rotation: v.optional(v.string()),
+	rotation: v.optional(v.picklist(["clockwise", "counterclockwise"])),
 });
 
 export const parseQuery = (params: URLSearchParams) => {
