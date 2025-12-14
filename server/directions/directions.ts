@@ -75,16 +75,13 @@ const fetchDirections = async (
 	}
 };
 
-async function directions(params: Query) {
-	let theJson: Response | null = null;
-
-	console.log("Doing a directions GET call:");
-
+const fetchCorrectDirections = async (params: Query) => {
 	const coordinates = buildCoordinates(params);
 	const options = buildOptions(params);
 
 	let tryAgain = true;
-	let directionsError = null;
+	let theJson: Response | null = null;
+
 	while (tryAgain) {
 		const data = { coordinates, options };
 
@@ -106,17 +103,23 @@ async function directions(params: Query) {
 				badCoord && coordinates.splice(+badCoord, 1);
 				tryAgain = true;
 			} else if (theJson.error.message.indexOf("150000") >= 0) {
-				directionsError = theJson.error.message;
-				tryAgain = false;
+				return undefined; // route too long
 			}
 		} else {
-			tryAgain = false;
+			return theJson?.features;
 		}
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 	}
+	return theJson?.features;
+};
 
-	if (directionsError == null && theJson) {
-		for (const feature of theJson.features) {
+async function directions(params: Query) {
+	console.log("Doing a directions GET call:");
+
+	const features = await fetchCorrectDirections(params);
+
+	if (features) {
+		for (const feature of features) {
 			const allPoints = (feature.geometry.coordinates ?? []).map(
 				([lng, lat]) =>
 					({ lat, lng }) as {
@@ -182,9 +185,9 @@ async function directions(params: Query) {
 			feature.allPoints = allPoints;
 		}
 
-		return theJson;
+		return features;
 	} else {
-		return { status: "NG", error: directionsError };
+		return { status: "NG", error: true };
 	}
 }
 

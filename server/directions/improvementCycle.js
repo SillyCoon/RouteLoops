@@ -38,12 +38,11 @@ const improvementIteration = async (
 	});
 
 	// Use the updated waypoint set for the next directions call
-	const directionsJson = await directions({
+	const features = await directions({
 		...directionsQuery,
 		waypoints: newWaypoints.map((wp) => [wp.lng, wp.lat]),
 	});
-	const newPoints = directionsJson.features[0].allPoints;
-
+	const newPoints = features[0].allPoints;
 	return {
 		keepGoing: !(
 			cleanTailsJson.cleanedUp === prevLastCounts.cleaned &&
