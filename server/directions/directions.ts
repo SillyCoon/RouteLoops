@@ -1,9 +1,9 @@
-import { buildCoordinates, buildOptions } from "./query.js";
+import { buildCoordinates, buildOptions, type Query } from "./query.js";
 
 // Shared helper to compute distance between two lat/lng points in km.
-function LatLngDist(lat1, lon1, lat2, lon2) {
+function LatLngDist(lat1: number, lon1: number, lat2: number, lon2: number) {
 	const R = 6371; // km
-	const toRad = (deg) => (deg * Math.PI) / 180;
+	const toRad = (deg: number) => (deg * Math.PI) / 180;
 	const dLat = toRad(lat2 - lat1);
 	const dLon = toRad(lon2 - lon1);
 	const a =
@@ -13,8 +13,50 @@ function LatLngDist(lat1, lon1, lat2, lon2) {
 	return R * c;
 }
 
-const fetchDirections = async (mode, data) => {
+type Response = {
+	error?: { code: number; message: string };
+	features: Array<{
+		geometry: { coordinates: Array<[number, number]> };
+		properties: {
+			segments: Array<{
+				steps: Array<{
+					instruction: string;
+					way_points: [number, number];
+				}>;
+			}>;
+		};
+		totalDistanceKm?: number;
+		allPoints?: Array<{
+			lat: number;
+			lng: number;
+			cumulativeDistanceKm?: number;
+			instructions?: string;
+			distanceToNextKm?: number;
+			nextInstructionAt?: number;
+		}>;
+	}>;
+};
+
+const fetchDirections = async (
+	mode: string,
+	data: {
+		coordinates: [number, number][];
+		options: {
+			avoid_features: string[];
+			profile_params: {
+				weightings: {
+					steepness_difficulty: number;
+					green: number;
+					quiet: number;
+				};
+			};
+		};
+	},
+): Promise<Response | null> => {
 	const apiRoot = `https://api.openrouteservice.org/v2/directions/${mode}/geojson`;
+	if (!process.env.OSM_API_KEY) {
+		throw new Error("OSM_API_KEY environment variable is not set.");
+	}
 	try {
 		const response = await fetch(apiRoot, {
 			method: "POST",
@@ -26,28 +68,15 @@ const fetchDirections = async (mode, data) => {
 				"Content-Type": "application/json; charset=utf-8",
 			},
 		});
-		return response.json();
+		return response.json() as Promise<Response>;
 	} catch (error) {
 		console.log("Error in fetchDirections:", error);
 		return null;
 	}
 };
 
-/**
- * @param {{
- * lat: string | null;
- * lng: string | null;
- * highways: string;
- * ferries: string;
- * waypoints: Array<[lat: number, lng: number]>;
- * mode: string;
- * fitnessLevel: number;
- * greenFactor: number;
- * quietFactor: number;
- * }} params
- */
-async function directions(params) {
-	let theJson = null;
+async function directions(params: Query) {
+	let theJson: Response | null = null;
 
 	console.log("Doing a directions GET call:");
 
@@ -61,7 +90,7 @@ async function directions(params) {
 
 		theJson = await fetchDirections(params.mode, data);
 
-		if (theJson && "error" in theJson) {
+		if (theJson && "error" in theJson && theJson.error) {
 			console.log("Directions error:", theJson);
 			if (theJson.error.message.indexOf("Could not find routable point") >= 0) {
 				const split = theJson.error.message.split("coordinate");
@@ -74,7 +103,7 @@ async function directions(params) {
 				console.log(
 					`Coordinate ${badCoord} at ${JSON.stringify(badLatLng)} is bad, so try again without it.`,
 				);
-				coordinates.splice(badCoord, 1);
+				badCoord && coordinates.splice(+badCoord, 1);
 				tryAgain = true;
 			} else if (theJson.error.message.indexOf("150000") >= 0) {
 				directionsError = theJson.error.message;
@@ -86,56 +115,67 @@ async function directions(params) {
 		await new Promise((resolve) => setTimeout(resolve, 1000));
 	}
 
-	if (directionsError == null) {
+	if (directionsError == null && theJson) {
 		for (const feature of theJson.features) {
 			const allPoints = (feature.geometry.coordinates ?? []).map(
-				([lng, lat]) => ({ lat, lng }),
+				([lng, lat]) =>
+					({ lat, lng }) as {
+						lat: number;
+						lng: number;
+						instructions?: string;
+						cumulativeDistanceKm?: number;
+						distanceToNextKm?: number;
+						nextInstructionAt?: number;
+					},
 			);
 			for (let a = allPoints.length - 1; a >= 1; a--) {
 				if (
-					allPoints[a].lat === allPoints[a - 1].lat &&
-					allPoints[a].lng === allPoints[a - 1].lng
+					allPoints?.[a]?.lat === allPoints?.[a - 1]?.lat &&
+					allPoints?.[a]?.lng === allPoints?.[a - 1]?.lng
 				) {
 					allPoints.splice(a, 1);
 				}
 			}
 			let cumulativeDistance = 0;
-			allPoints[0].cumulativeDistanceKm = 0;
+			const firstPoint = allPoints[0];
+			if (firstPoint) firstPoint.cumulativeDistanceKm = 0;
 			for (let a = 1; a < allPoints.length; a++) {
 				const prev = allPoints[a - 1];
 				const curr = allPoints[a];
-				cumulativeDistance += LatLngDist(
-					prev.lat,
-					prev.lng,
-					curr.lat,
-					curr.lng,
-				);
-				allPoints[a].cumulativeDistanceKm = cumulativeDistance;
+				cumulativeDistance +=
+					prev && curr ? LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng) : 0;
+				const point = allPoints[a];
+				if (point) point.cumulativeDistanceKm = cumulativeDistance;
 			}
 			feature.totalDistanceKm = cumulativeDistance;
 			for (const segment of feature.properties.segments ?? []) {
 				for (const step of segment.steps ?? []) {
 					const atPoint = step.way_points[0];
 					const instructions = step.instruction;
+					const point = allPoints[atPoint];
 					try {
-						allPoints[atPoint].instructions = instructions;
+						if (point) point.instructions = instructions;
 					} catch {
 						// ignore
 					}
 				}
 			}
 			for (let a = 0; a < allPoints.length; a++) {
-				if (!("instructions" in allPoints[a])) continue;
+				const point = allPoints[a];
+				if (!point || !("instructions" in point)) continue;
 				let distanceToNext = 0;
-				let b;
+				let b: number;
 				for (b = a + 1; b < allPoints.length; b++) {
 					const prev = allPoints[b - 1];
 					const curr = allPoints[b];
-					distanceToNext += LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng);
-					if ("instructions" in curr) break;
+					distanceToNext +=
+						prev && curr
+							? LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng)
+							: 0;
+					if (curr && "instructions" in curr) break;
 				}
-				allPoints[a].distanceToNextKm = distanceToNext;
-				allPoints[a].nextInstructionAt = b;
+				point.distanceToNextKm = distanceToNext;
+				point.nextInstructionAt = b;
 				a = b - 1;
 			}
 
