@@ -1,17 +1,25 @@
 {
-	"type": "module",
-	"dependencies": {
-		"cors": "^2.8.5",
-		"dotenv": "^16.4.7",
-		"express": "^4.21.2",
-		"fetch": "^1.1.0",
-		"node-fetch": "^3.3.2"
-	},
-	"scripts": {
-		"start": "bun ./serverCodeOsm.js",
-		"test": "bun test"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.3.8"
-	}
+  "type": "module",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "fetch": "^1.1.0",
+    "leaflet": "1.9.4",
+    "node-fetch": "^3.3.2"
+  },
+  "scripts": {
+    "start": "bun ./serverCodeOsm.js",
+    "test": "bun test",
+    "watch": "bun --watch ./serverCodeOsm.js"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.8",
+    "@types/bun": "latest"
+  },
+  "name": "routeloops",
+  "private": true,
+  "peerDependencies": {
+    "typescript": "^5"
+  }
 }

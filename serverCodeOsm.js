@@ -10,7 +10,6 @@ dotenv.config();
 
 import { parseQuery as parseRLQuery } from "./rlpoints.js";
 import { parseQuery as parseDirectionsQuery } from "./directions.js";
-import { improvementCycle } from "./improvementCycle.js";
 
 var app = express();
 app.use(cors());
@@ -18,14 +17,8 @@ app.use(express.static("./"));
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
-app.get("/directions", (req, res) =>
-	directions(parseDirectionsQuery(req.url)).then((data) => res.json(data)),
-);
 app.get("/getRLpoints", (req, res) =>
 	getRLpoints(parseRLQuery(req.url)).then((data) => res.json(data)),
-);
-app.post("/cleanTails", (req, res) =>
-	cleanTails(req.body?.LLs ?? []).then((data) => res.json(data)),
 );
 app.get("/cleanDirections", async (req, res) => {
 	res.setHeader("Cache-Control", "no-cache");
@@ -48,12 +41,7 @@ app.get("/cleanDirections", async (req, res) => {
 		res.write(`data: ${JSON.stringify(data)}\n\n`);
 	}
 });
-app.post("/cleanFull", (req, res) => {
-	const query = parseDirectionsQuery(req.url);
-	improvementCycle(req.body.allPoints, req.body.waypoints, query).then((data) =>
-		res.json(data),
-	);
-});
+
 app.post("/showDirections", showDirections);
 app.post("/makeSparseGPX", makeSparseGPX);
 app.post("/makeDenseGPX", makeDenseGPX);

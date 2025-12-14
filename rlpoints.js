@@ -3,19 +3,7 @@ import { rectangleRoute } from "./routes/rectangle.js";
 import { fig8Route } from "./routes/fig8.js";
 import { METERS_PER_KILOMETER } from "./routes/constants.js";
 
-// Extracted without refactor from serverCodeOsm.js
-// Provides getRLpoints, circleRoute, rectangleRoute, fig8Route
-// Named constants to eliminate magic numbers and clarify intent
-
-// Distance conversion
-
-// Circle/figure-8 generation parameters
-
-// Heading sectors (radians) relative to east=0 using original fractional definitions
-// Note: Precomputed angle fractions kept for clarity but not directly used
-
-export const parseQuery = (url) => {
-	const params = new URLSearchParams(url.split("?")[1]);
+export const parseQuery = (params) => {
 	return {
 		latLng: { lat: +params.get("lat"), lng: +params.get("lng") },
 		dist: params.get("dist") * METERS_PER_KILOMETER,
@@ -27,9 +15,8 @@ export const parseQuery = (url) => {
 
 const calculateMethod = (maybeMethod) => {
 	if (maybeMethod && maybeMethod !== "random") return maybeMethod;
-	return ["circular", "rectangular", "figure8"][
-		Math.floor(Math.random() * methods.length)
-	];
+	const methods = ["circular", "rectangular", "figure8"];
+	return methods[Math.floor(Math.random() * methods.length)];
 };
 
 const methods = {
@@ -46,9 +33,9 @@ const methods = {
  * @param {Object} params - The parameters for generating route loop points.
  * @param {Object} params.latLng - The latitude and longitude coordinates.
  * @param {number} params.dist - The distance for the route loop in meters.
- * @param {string} params.direction - The direction of the route loop.
+ * @param {number} params.direction - The direction of the route loop.
  * @param {string} params.method - The method to use for generating points.
- * @param {number} params.rotation - The rotation angle for the route loop.
+ * @param {string} params.rotation - The rotation angle for the route loop.
  * @returns {Promise<any>} A promise that resolves to the generated route loop points.
  */
 export async function getRLpoints({
@@ -58,5 +45,6 @@ export async function getRLpoints({
 	method,
 	rotation,
 }) {
+	console.log(`getRLpoints called with method: ${method}`);
 	return methods[method](latLng, dist, direction, rotation);
 }

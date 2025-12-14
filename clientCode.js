@@ -1,4 +1,4 @@
-import "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+import L from "leaflet";
 //Include valid tokens for routers, if required.
 //Also, adjust the callback
 //Adjust all DoNotPush
@@ -15,6 +15,7 @@ let hasRouteLink = false;
 const avoidFerries = "yes";
 const method = "random";
 const direction = "0";
+let evtSource = null;
 
 let homeLocation = null;
 
@@ -175,7 +176,16 @@ const url = (path, params) => {
 const getCleanDirections = async (initialWaypoints) => {
 	const params = getDirectionsParams(initialWaypoints);
 
-	const evtSource = new EventSource(url(`cleanDirections`, params));
+	evtSource = new EventSource(url(`cleanDirections`, params));
+
+	evtSource.addEventListener("error", (event) => {
+		console.error("Error in EventSource:", event);
+		evtSource.close();
+	});
+
+	evtSource.addEventListener("end", (_) => {
+		evtSource.close();
+	});
 
 	evtSource.addEventListener("start", (event) => {
 		const data = JSON.parse(event.data);
@@ -214,6 +224,7 @@ const cleanMap = () => {
 
 //........................................................................................
 async function doRL(waypointsIn) {
+	evtSource?.close();
 	cleanMap();
 	const initialWaypoints = waypointsIn ?? (await getRLpoints());
 	drawGuidePoints(initialWaypoints, waypointsIn);
