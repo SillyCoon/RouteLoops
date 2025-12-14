@@ -1,8 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import { directions } from "./directions.js";
-import { cleanTails } from "./cleanTails.js";
 import { getRLpoints } from "./rlpoints.js";
 import { cleanDirections } from "./cleanDirections.js";
 import dotenv from "dotenv";
