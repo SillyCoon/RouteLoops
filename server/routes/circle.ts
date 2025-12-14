@@ -34,7 +34,6 @@ export function circleRoute(
 ): { lat: number; lng: number }[] {
 	const sign = signByRotation[rotation];
 	const radius = length / (2 * Math.PI);
-	const deg: number[] = [];
 	const rlPoints: { lat: number; lng: number }[] = [];
 	const direction =
 		directionOverride ??
@@ -42,17 +41,11 @@ export function circleRoute(
 		directionByHeading.default;
 	const center = calculatePoint(BaseLocation, direction, radius);
 
-	deg.push(direction + Math.PI);
-
-	for (let i = 1; i < circlePoints + 1; i++) {
-		const prevDeg = deg[i - 1];
-		const currDeg = deg[i];
-		if (!currDeg || !prevDeg) {
-			console.log("Error calculating circle route degrees");
-			break;
-		}
-		deg.push(prevDeg + (sign * 2 * Math.PI) / (circlePoints + 1));
-		rlPoints.push(calculatePoint(center, currDeg, radius));
+	const startAngle = direction + Math.PI;
+	const stepAngle = (sign * 2 * Math.PI) / (circlePoints + 1);
+	for (let i = 1; i <= circlePoints; i++) {
+		const angle = startAngle + stepAngle * i;
+		rlPoints.push(calculatePoint(center, angle, radius));
 	}
 
 	return rlPoints;
