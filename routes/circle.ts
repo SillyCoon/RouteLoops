@@ -7,7 +7,11 @@ import {
 
 const DEFAULT_CIRCLE_POINTS = 4; // points around circle for circular route
 
-const calculatePoint = (location, direction, radius) => {
+const calculatePoint = (
+	location: { lat: number; lng: number },
+	direction: number,
+	radius: number,
+) => {
 	const dx = radius * Math.cos(direction);
 	const dy = radius * Math.sin(direction);
 	const delta_lat = dy / METERS_PER_DEGREE_LAT;
@@ -21,17 +25,17 @@ const calculatePoint = (location, direction, radius) => {
 };
 
 export function circleRoute(
-	BaseLocation,
-	length,
-	travelHeading,
-	rotation,
+	BaseLocation: { lat: number; lng: number },
+	length: number,
+	travelHeading: number,
+	rotation: "clockwise" | "counterclockwise",
 	circlePoints = DEFAULT_CIRCLE_POINTS,
-	directionOverride,
-) {
+	directionOverride?: number,
+): { lat: number; lng: number }[] {
 	const sign = signByRotation[rotation];
 	const radius = length / (2 * Math.PI);
-	const deg = [];
-	const rlPoints = [];
+	const deg: number[] = [];
+	const rlPoints: { lat: number; lng: number }[] = [];
 	const direction =
 		directionOverride ??
 		directionByHeading[travelHeading] ??
@@ -41,8 +45,14 @@ export function circleRoute(
 	deg.push(direction + Math.PI);
 
 	for (let i = 1; i < circlePoints + 1; i++) {
-		deg.push(deg[i - 1] + (sign * 2 * Math.PI) / (circlePoints + 1));
-		rlPoints.push(calculatePoint(center, deg[i], radius));
+		const prevDeg = deg[i - 1];
+		const currDeg = deg[i];
+		if (!currDeg || !prevDeg) {
+			console.log("Error calculating circle route degrees");
+			break;
+		}
+		deg.push(prevDeg + (sign * 2 * Math.PI) / (circlePoints + 1));
+		rlPoints.push(calculatePoint(center, currDeg, radius));
 	}
 
 	return rlPoints;

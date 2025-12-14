@@ -2,7 +2,7 @@ export const METERS_PER_DEGREE_LAT = 110540;
 export const METERS_PER_DEGREE_LNG_EQUATOR = 111320;
 export const METERS_PER_KILOMETER = 1000;
 
-export const directionByHeading = {
+export const directionByHeading: Record<number | "default", number> = {
 	0: Math.random() * Math.PI * 2,
 	1: (Math.random() * Math.PI) / 4 + (3 * Math.PI) / 8,
 	2: (Math.random() * Math.PI) / 4 + (1 * Math.PI) / 8,
