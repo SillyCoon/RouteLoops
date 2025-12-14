@@ -1,4 +1,4 @@
-import { directionByHeading } from "./constants.js";
+import { directionByHeading } from "./constants";
 import { circleRoute } from "./circle.js";
 
 const FIG8_CIRCLE_POINTS = 3; // points per lobe in figure-8

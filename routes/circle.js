@@ -3,7 +3,7 @@ import {
 	METERS_PER_DEGREE_LNG_EQUATOR,
 	directionByHeading,
 	signByRotation,
-} from "./constants.js";
+} from "./constants";
 
 const DEFAULT_CIRCLE_POINTS = 4; // points around circle for circular route
 

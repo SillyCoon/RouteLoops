@@ -2,7 +2,7 @@ import {
 	directionByHeading,
 	signByRotation,
 	calculatePoint,
-} from "./constants.js";
+} from "./constants";
 
 const RECT_MAX_RATIO = 5; // max height:width ratio
 const RECT_MIN_RATIO = 1 / RECT_MAX_RATIO; // min height:width ratio

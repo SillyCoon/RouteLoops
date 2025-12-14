@@ -20,7 +20,11 @@ export const signByRotation = {
 	counterclockwise: +1,
 };
 
-export const calculatePoint = (location, direction, radius) => {
+export const calculatePoint = (
+	location: { lat: number; lng: number },
+	direction: number,
+	radius: number,
+) => {
 	const dx = radius * Math.cos(direction);
 	const dy = radius * Math.sin(direction);
 	const delta_lat = dy / METERS_PER_DEGREE_LAT;
