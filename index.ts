@@ -13,9 +13,10 @@ const server = Bun.serve({
 			return Response.json(waypoints);
 		},
 		"/cleanDirections": async (req) => {
+			const { searchParams } = new URL(req.url);
 			return new Response(
 				async function* () {
-					for await (const data of cleanDirections(parseQuery(req.url))) {
+					for await (const data of cleanDirections(parseQuery(searchParams))) {
 						if (data.iteration === 0) {
 							yield `event: start\n`;
 						} else {

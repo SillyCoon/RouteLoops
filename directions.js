@@ -12,7 +12,7 @@ function LatLngDist(lat1, lon1, lat2, lon2) {
 }
 
 // Helpers
-export function parseQuery(url) {
+export function parseQuery(params) {
 	const defaults = {
 		lat: null,
 		lng: null,
@@ -25,9 +25,7 @@ export function parseQuery(url) {
 		quietFactor: 0,
 		distance: 0,
 	};
-	const qIndex = url.indexOf("?");
-	if (qIndex < 0) return defaults;
-	const params = new URLSearchParams(url.slice(qIndex + 1));
+	if (!params) return defaults;
 	const { waypoints, ...entries } = Object.fromEntries(params.entries());
 	const waypointsArray = (waypoints ?? "")
 		.split("|")
