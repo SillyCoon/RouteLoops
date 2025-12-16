@@ -113,7 +113,7 @@ export const fetchDirections: FetchDirections = async (mode, data) => {
 		return null;
 	}
 
-	return response;
+	return response.features[0] ?? null;
 };
 
 export const OpenRouteService = { fetchDirections };
