@@ -1,6 +1,7 @@
 import { directions } from "./directions.js";
 import { improvementCycleGen } from "./improvementCycle.js";
 import type { Query } from "./query.js";
+import { cumulativeDistances } from "./utils.js";
 
 export async function* cleanDirections(query: Query) {
 	// Run base directions
@@ -12,14 +13,9 @@ export async function* cleanDirections(query: Query) {
 		lng,
 	}));
 
-	// Yield a uniform first step compatible with improvementCycleGen outputs
-	const initialDistance =
-		allPoints.length > 0
-			? (allPoints[allPoints.length - 1]?.cumulativeDistanceKm ?? 0)
-			: 0;
 	yield {
 		iteration: 0,
-		distance: initialDistance,
+		distance: cumulativeDistances(allPoints).total,
 		cleanedUp: 0,
 		totalPoints: allPoints.length,
 		waypoints: initialWaypoints,

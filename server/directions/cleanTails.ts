@@ -1,17 +1,4 @@
-import { LatLngDist } from "./directions.js";
-
-// Compute cumulative distances along a path of lat/lng points.
-const cumulativeDistances = (points: { lat: number; lng: number }[]) => {
-	const dists = [0];
-	let cum = 0;
-	for (let i = 0; i < points.length - 1; i++) {
-		const a = points[i];
-		const b = points[i + 1];
-		cum += a && b ? LatLngDist(a.lat, a.lng, b.lat, b.lng) : 0;
-		dists.push(cum);
-	}
-	return { dists, total: cum };
-};
+import { cumulativeDistances, LatLngDist } from "./utils";
 
 // For each point i, find the closest subsequent point j>i by distance.
 const closestForwardPoints = (points: { lat: number; lng: number }[]) => {

@@ -1,24 +1,7 @@
 import type { GeoJsonProperties, MultiPoint } from "geojson";
 import { OpenRouteService } from "../openroute/index.js";
 import { buildCoordinates, buildOptions, type Query } from "./query.js";
-
-// Shared helper to compute distance between two lat/lng points in km.
-export function LatLngDist(
-	lat1: number,
-	lon1: number,
-	lat2: number,
-	lon2: number,
-) {
-	const R = 6371; // km
-	const toRad = (deg: number) => (deg * Math.PI) / 180;
-	const dLat = toRad(lat2 - lat1);
-	const dLon = toRad(lon2 - lon1);
-	const a =
-		Math.sin(dLat / 2) ** 2 +
-		Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-	const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-	return R * c;
-}
+import { LatLngDist } from "./utils.js";
 
 export type DirectionsResponse = GeoJSON.Feature<MultiPoint> | null;
 
@@ -59,33 +42,8 @@ type Point = {
 
 type FinalPoint = Point & {
 	instructions?: string;
-	cumulativeDistanceKm?: number;
 	distanceToNextKm?: number;
 	nextInstructionAt?: number;
-};
-
-const addCumulativeDistance = <T extends Point>(points: T[]) => {
-	const pointsWithDistance: (T & {
-		cumulativeDistanceKm?: number;
-	})[] = [];
-
-	let cumulativeDistance = 0;
-	const firstPoint = pointsWithDistance[0];
-	if (firstPoint) firstPoint.cumulativeDistanceKm = 0;
-
-	for (let a = 1; a < points.length; a++) {
-		const prev = points[a - 1];
-		const curr = points[a];
-		cumulativeDistance +=
-			prev && curr ? LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng) : 0;
-		const point = points[a];
-		if (point)
-			pointsWithDistance.push({
-				...point,
-				cumulativeDistanceKm: cumulativeDistance,
-			});
-	}
-	return pointsWithDistance;
 };
 
 const addInstructions = (points: FinalPoint[], props: GeoJsonProperties) => {
@@ -124,7 +82,6 @@ export async function directions(params: Query): Promise<
 		lat: number;
 		lng: number;
 		instructions?: string | undefined;
-		cumulativeDistanceKm?: number | undefined;
 		distanceToNextKm?: number | undefined;
 		nextInstructionAt?: number | undefined;
 	}[]
@@ -146,9 +103,8 @@ export async function directions(params: Query): Promise<
 			}) as Point,
 	);
 	const uniquePoints = removeDuplicates(allPoints);
-	const pointsWithDistance = addCumulativeDistance<FinalPoint>(uniquePoints);
 	const pointsWithDistanceAndInstructions = addInstructions(
-		pointsWithDistance,
+		uniquePoints,
 		feature.properties ?? {},
 	);
 	const finalPoints = addDistanceToNext(pointsWithDistanceAndInstructions);
