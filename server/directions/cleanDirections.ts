@@ -1,7 +1,8 @@
 import { directions } from "./directions.js";
 import { improvementCycleGen } from "./improvementCycle.js";
+import type { Query } from "./query.js";
 
-export async function* cleanDirections(query) {
+export async function* cleanDirections(query: Query) {
 	// Run base directions
 	const allPoints = await directions(query);
 
