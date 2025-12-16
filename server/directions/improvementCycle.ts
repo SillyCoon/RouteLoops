@@ -1,11 +1,12 @@
 import { cleanTails } from "./cleanTails.js";
 import { directions } from "./directions.js";
+import type { Query } from "./query.js";
 
 const improvementIteration = async (
-	allPoints,
-	waypoints,
-	prevLastCounts,
-	directionsQuery,
+	allPoints: { lat: number; lng: number }[],
+	waypoints: { lat: number; lng: number }[],
+	prevLastCounts: { cleaned: number; total: number },
+	directionsQuery: Query,
 ) => {
 	const cleanTailsJson = await cleanTails(allPoints);
 
@@ -26,14 +27,20 @@ const improvementIteration = async (
 	// You modified the path, so redo with the cleaned path.
 	// FP-style: map each previous waypoint to closest point in newPath using reduce.
 	const newWaypoints = waypoints.map((waypoint) => {
-		const closest = cleanTailsJson.newPath.reduce((best, point) => {
-			const separation =
-				(waypoint.lat - point.lat) ** 2 + (waypoint.lng - point.lng) ** 2;
-			if (best == null || separation < best.separation) {
-				return { point, separation };
-			}
-			return best;
-		}, null);
+		const closest = cleanTailsJson.newPath.reduce(
+			(best, point) => {
+				const separation =
+					(waypoint.lat - point.lat) ** 2 + (waypoint.lng - point.lng) ** 2;
+				if (best == null || separation < best.separation) {
+					return { point, separation };
+				}
+				return best;
+			},
+			null as {
+				point: { lat: number; lng: number };
+				separation: number;
+			} | null,
+		);
 		return closest?.point ?? waypoint;
 	});
 
@@ -58,9 +65,9 @@ const improvementIteration = async (
 };
 
 export async function* improvementCycleGen(
-	rawPoints,
-	initialWaypoints,
-	directionsQuery,
+	rawPoints: { lat: number; lng: number; cumulativeDistanceKm?: number }[],
+	initialWaypoints: { lat: number; lng: number }[],
+	directionsQuery: Query,
 ) {
 	let finalPoints = [...rawPoints];
 	let waypoints = [...initialWaypoints];
