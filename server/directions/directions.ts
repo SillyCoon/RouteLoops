@@ -39,7 +39,16 @@ export type FetchDirections = (
 	},
 ) => Promise<DirectionsResponse | null>;
 
-export async function directions(params: Query) {
+export async function directions(params: Query): Promise<
+	{
+		lat: number;
+		lng: number;
+		instructions?: string | undefined;
+		cumulativeDistanceKm?: number | undefined;
+		distanceToNextKm?: number | undefined;
+		nextInstructionAt?: number | undefined;
+	}[]
+> {
 	console.log("Doing a directions GET call:");
 
 	const features = (
@@ -49,7 +58,7 @@ export async function directions(params: Query) {
 		})
 	)?.features;
 
-	if (!features) return { status: "NG", error: true };
+	if (!features) return [];
 
 	for (const feature of features) {
 		const allPoints = (feature.geometry.coordinates ?? []).map(
@@ -117,5 +126,6 @@ export async function directions(params: Query) {
 		feature.allPoints = allPoints;
 	}
 
-	return features;
+	// @ts-expect-error --- custom property
+	return features[0].allPoints ?? [];
 }

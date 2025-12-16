@@ -3,8 +3,7 @@ import { improvementCycleGen } from "./improvementCycle.js";
 
 export async function* cleanDirections(query) {
 	// Run base directions
-	const features = await directions(query);
-	const allPoints = features[0]?.allPoints ?? [];
+	const allPoints = await directions(query);
 
 	// Convert query waypoints ([lng,lat]) into {lat,lng} objects for improvementCycleGen
 	const initialWaypoints = (query.waypoints ?? []).map(([lng, lat]) => ({
