@@ -83,6 +83,7 @@ export async function directions(params: Query): Promise<
 		let cumulativeDistance = 0;
 		const firstPoint = allPoints[0];
 		if (firstPoint) firstPoint.cumulativeDistanceKm = 0;
+
 		for (let a = 1; a < allPoints.length; a++) {
 			const prev = allPoints[a - 1];
 			const curr = allPoints[a];
@@ -91,8 +92,7 @@ export async function directions(params: Query): Promise<
 			const point = allPoints[a];
 			if (point) point.cumulativeDistanceKm = cumulativeDistance;
 		}
-		// @ts-expect-error --- custom property
-		feature.totalDistanceKm = cumulativeDistance;
+
 		for (const segment of feature.properties?.segments ?? []) {
 			for (const step of segment.steps ?? []) {
 				const atPoint = step.way_points[0];
