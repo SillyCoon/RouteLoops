@@ -1,4 +1,4 @@
-import type { MultiPoint } from "geojson";
+import type { GeoJsonProperties, MultiPoint } from "geojson";
 import { OpenRouteService } from "../openroute/index.js";
 import { buildCoordinates, buildOptions, type Query } from "./query.js";
 
@@ -39,6 +39,86 @@ export type FetchDirections = (
 	},
 ) => Promise<DirectionsResponse | null>;
 
+const removeDuplicates = (points: { lat: number; lng: number }[]) => {
+	const uniquePoints = [...points];
+	for (let a = points.length - 1; a >= 1; a--) {
+		if (
+			uniquePoints?.[a]?.lat === uniquePoints?.[a - 1]?.lat &&
+			uniquePoints?.[a]?.lng === uniquePoints?.[a - 1]?.lng
+		) {
+			uniquePoints.splice(a, 1);
+		}
+	}
+	return uniquePoints;
+};
+
+type Point = {
+	lat: number;
+	lng: number;
+};
+
+type FinalPoint = Point & {
+	instructions?: string;
+	cumulativeDistanceKm?: number;
+	distanceToNextKm?: number;
+	nextInstructionAt?: number;
+};
+
+const addCumulativeDistance = <T extends Point>(points: T[]) => {
+	const pointsWithDistance: (T & {
+		cumulativeDistanceKm?: number;
+	})[] = [];
+
+	let cumulativeDistance = 0;
+	const firstPoint = pointsWithDistance[0];
+	if (firstPoint) firstPoint.cumulativeDistanceKm = 0;
+
+	for (let a = 1; a < points.length; a++) {
+		const prev = points[a - 1];
+		const curr = points[a];
+		cumulativeDistance +=
+			prev && curr ? LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng) : 0;
+		const point = points[a];
+		if (point)
+			pointsWithDistance.push({
+				...point,
+				cumulativeDistanceKm: cumulativeDistance,
+			});
+	}
+	return pointsWithDistance;
+};
+
+const addInstructions = (points: FinalPoint[], props: GeoJsonProperties) => {
+	for (const segment of props?.segments ?? []) {
+		for (const step of segment.steps ?? []) {
+			const atPoint = step.way_points[0];
+			const point = points[atPoint];
+			if (point) point.instructions = step.instruction;
+		}
+	}
+	return points;
+};
+
+const addDistanceToNext = (points: FinalPoint[]) => {
+	for (let a = 0; a < points.length; a++) {
+		const point = points[a];
+		if (!point || !("instructions" in point)) continue;
+		let distanceToNext = 0;
+		let b: number;
+		for (b = a + 1; b < points.length; b++) {
+			const prev = points[b - 1];
+			const curr = points[b];
+			distanceToNext +=
+				prev && curr ? LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng) : 0;
+			if (curr && "instructions" in curr) break;
+		}
+		point.distanceToNextKm = distanceToNext;
+		point.nextInstructionAt = b;
+		a = b - 1;
+	}
+	return points;
+};
+
 export async function directions(params: Query): Promise<
 	{
 		lat: number;
@@ -60,64 +140,17 @@ export async function directions(params: Query): Promise<
 
 	const allPoints = (feature.geometry.coordinates ?? []).map(
 		([lng, lat]) =>
-			({ lat, lng }) as {
-				lat: number;
-				lng: number;
-				instructions?: string;
-				cumulativeDistanceKm?: number;
-				distanceToNextKm?: number;
-				nextInstructionAt?: number;
-			},
+			({
+				lat,
+				lng,
+			}) as Point,
 	);
-	for (let a = allPoints.length - 1; a >= 1; a--) {
-		if (
-			allPoints?.[a]?.lat === allPoints?.[a - 1]?.lat &&
-			allPoints?.[a]?.lng === allPoints?.[a - 1]?.lng
-		) {
-			allPoints.splice(a, 1);
-		}
-	}
-	let cumulativeDistance = 0;
-	const firstPoint = allPoints[0];
-	if (firstPoint) firstPoint.cumulativeDistanceKm = 0;
-
-	for (let a = 1; a < allPoints.length; a++) {
-		const prev = allPoints[a - 1];
-		const curr = allPoints[a];
-		cumulativeDistance +=
-			prev && curr ? LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng) : 0;
-		const point = allPoints[a];
-		if (point) point.cumulativeDistanceKm = cumulativeDistance;
-	}
-
-	for (const segment of feature.properties?.segments ?? []) {
-		for (const step of segment.steps ?? []) {
-			const atPoint = step.way_points[0];
-			const instructions = step.instruction;
-			const point = allPoints[atPoint];
-			try {
-				if (point) point.instructions = instructions;
-			} catch {
-				// ignore
-			}
-		}
-	}
-	for (let a = 0; a < allPoints.length; a++) {
-		const point = allPoints[a];
-		if (!point || !("instructions" in point)) continue;
-		let distanceToNext = 0;
-		let b: number;
-		for (b = a + 1; b < allPoints.length; b++) {
-			const prev = allPoints[b - 1];
-			const curr = allPoints[b];
-			distanceToNext +=
-				prev && curr ? LatLngDist(prev.lat, prev.lng, curr.lat, curr.lng) : 0;
-			if (curr && "instructions" in curr) break;
-		}
-		point.distanceToNextKm = distanceToNext;
-		point.nextInstructionAt = b;
-		a = b - 1;
-	}
-
-	return allPoints;
+	const uniquePoints = removeDuplicates(allPoints);
+	const pointsWithDistance = addCumulativeDistance<FinalPoint>(uniquePoints);
+	const pointsWithDistanceAndInstructions = addInstructions(
+		pointsWithDistance,
+		feature.properties ?? {},
+	);
+	const finalPoints = addDistanceToNext(pointsWithDistanceAndInstructions);
+	return finalPoints;
 }
