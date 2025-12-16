@@ -105,34 +105,3 @@ export async function* improvementCycleGen(
 		iteration: countCalcs,
 	};
 }
-
-// Backward-compatible helper that consumes the generator and returns final result
-export const improvementCycle = async (
-	rawPoints,
-	initialWaypoints,
-	directionsQuery,
-) => {
-	let lastStep = null;
-	// Use for-await to consume the async generator and capture the final step
-	for await (const step of improvementCycleGen(
-		rawPoints,
-		initialWaypoints,
-		directionsQuery,
-	)) {
-		lastStep = step;
-	}
-
-	return lastStep
-		? {
-				cleanPoints: lastStep.points,
-				waypoints: lastStep.waypoints,
-				distance: lastStep.distance,
-				countCalcs: lastStep.iteration,
-			}
-		: {
-				cleanPoints: rawPoints,
-				waypoints: initialWaypoints,
-				distance: rawPoints[rawPoints.length - 1]?.cumulativeDistanceKm ?? 0,
-				countCalcs: 0,
-			};
-};
