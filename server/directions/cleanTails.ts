@@ -1,27 +1,27 @@
 import { LatLngDist } from "./directions.js";
 
 // Compute cumulative distances along a path of lat/lng points.
-const cumulativeDistances = (points) => {
+const cumulativeDistances = (points: { lat: number; lng: number }[]) => {
 	const dists = [0];
 	let cum = 0;
 	for (let i = 0; i < points.length - 1; i++) {
 		const a = points[i];
 		const b = points[i + 1];
-		cum += LatLngDist(a.lat, a.lng, b.lat, b.lng);
+		cum += a && b ? LatLngDist(a.lat, a.lng, b.lat, b.lng) : 0;
 		dists.push(cum);
 	}
 	return { dists, total: cum };
 };
 
 // For each point i, find the closest subsequent point j>i by distance.
-const closestForwardPoints = (points) => {
+const closestForwardPoints = (points: { lat: number; lng: number }[]) => {
 	const closestIndex = new Array(points.length).fill(null);
 	const separation = new Array(points.length).fill(Infinity);
 	for (let i = 0; i < points.length; i++) {
 		const a = points[i];
 		for (let j = i + 1; j < points.length; j++) {
 			const b = points[j];
-			const d = LatLngDist(a.lat, a.lng, b.lat, b.lng);
+			const d = a && b ? LatLngDist(a.lat, a.lng, b.lat, b.lng) : 0;
 			if (d < separation[i]) {
 				separation[i] = d;
 				closestIndex[i] = j;
@@ -32,13 +32,18 @@ const closestForwardPoints = (points) => {
 };
 
 // Decide which points to keep, skipping short tails (<20% of total length).
-const decideUsage = (points, dists, total, closestIndex) => {
+const decideUsage = (
+	points: { lat: number; lng: number }[],
+	dists: number[],
+	total: number,
+	closestIndex: (number | null)[],
+) => {
 	const use = new Array(points.length).fill(true);
 	for (let i = 0; i < points.length; i++) {
 		const j = closestIndex[i];
 		if (j == null) continue;
 		if (j - i !== 1) {
-			const tailSize = (dists[j] - dists[i]) / (total || 1);
+			const tailSize = ((dists?.[j] ?? 0) - (dists?.[i] ?? 0)) / (total || 1);
 			if (tailSize < 0.2) {
 				// Mark all intermediate points as unused
 				for (let k = i + 1; k < j; k++) {
@@ -57,30 +62,27 @@ const decideUsage = (points, dists, total, closestIndex) => {
 	return use;
 };
 
-const buildPath = (points, use) => points.filter((_, idx) => use[idx]);
+const buildPath = (points: { lat: number; lng: number }[], use: boolean[]) =>
+	points.filter((_, idx) => use[idx]);
 
 /**
  * @param {Array<{lat: number, lng: number}>} path
  * @returns {number} The total distance of the path.
  */
-const pathDistance = (path) => {
+const pathDistance = (path: { lat: number; lng: number }[]) => {
 	let dist = 0;
 	for (let i = 1; i < path.length; i++) {
-		dist += LatLngDist(
-			path[i - 1].lat,
-			path[i - 1].lng,
-			path[i].lat,
-			path[i].lng,
-		);
+		const first = path[i - 1];
+		const second = path[i];
+		dist +=
+			first && second
+				? LatLngDist(first.lat, first.lng, second.lat, second.lng)
+				: 0;
 	}
 	return dist;
 };
 
-/**
- *
- * @param {{lat: number, lng: number}[]} routeLatLng
- */
-async function cleanTails(routeLatLng) {
+async function cleanTails(routeLatLng: { lat: number; lng: number }[]) {
 	console.log("Cleaning tails for route with", routeLatLng.length, "points");
 	if (!Array.isArray(routeLatLng) || routeLatLng.length < 2) {
 		return { newPath: routeLatLng, cleanedUp: 0, distKm: 0 };
